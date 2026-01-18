@@ -1,6 +1,7 @@
 const API_URL = '/api/files';
 let files = [];
 let accessPassword = localStorage.getItem('pdf_access_token');
+let editingId = null; // 记录当前正在行内编辑的ID
 
 function init() {
     if (!accessPassword) {
@@ -28,30 +29,11 @@ async function apiFetch(url, options = {}) {
     return res;
 }
 
-// 新增：文件预检 [建议 2]
-async function checkUrl(url) {
-    try {
-        const res = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
-        return await res.json();
-    } catch (e) { return { ok: false }; }
-}
-
 async function addFile() {
     const name = document.getElementById('fileName').value;
     const url = document.getElementById('fileUrl').value;
     const tags = document.getElementById('fileTags').value;
-    const btn = document.getElementById('addBtn');
-
-    if (!name || !url) return showToast("名称和链接必填");
-
-    btn.disabled = true;
-    btn.textContent = "预检中...";
-
-    const check = await checkUrl(url);
-    if (!check.ok) {
-        btn.disabled = false; btn.textContent = "添加文件";
-        return showToast("错误：链接无法访问");
-    }
+    if (!name || !url) return showToast("请填写名称和链接");
 
     const fileData = {
         id: Date.now().toString(),
@@ -63,59 +45,83 @@ async function addFile() {
 
     const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(fileData) });
     if (res && res.ok) {
-        showToast("添加成功" + (check.isPdf ? "" : " (注意：可能不是标准PDF)"));
+        showToast("已保存");
         ["fileName", "fileUrl", "fileTags"].forEach(id => document.getElementById(id).value = '');
         loadFiles();
     }
-    btn.disabled = false; btn.textContent = "添加文件";
 }
 
 function renderFileList() {
     const query = document.getElementById('searchInput').value.toLowerCase();
     const list = document.getElementById('fileList');
     
-    // 支持 #标签 搜索 [建议 1]
     const filtered = files.filter(f => {
-        if (query.startsWith('#')) {
-            const tagQuery = query.slice(1);
-            return f.tags?.some(t => t.toLowerCase().includes(tagQuery));
-        }
+        if (query.startsWith('#')) return f.tags?.some(t => t.toLowerCase().includes(query.slice(1)));
         return f.name.toLowerCase().includes(query);
     });
 
-    list.innerHTML = filtered.map(file => `
+    list.innerHTML = filtered.map(file => {
+        const isEditing = editingId === file.id;
+        return `
         <li class="file-card">
-            <div class="file-main">
-                <div class="file-info">
-                    <strong>${file.name}</strong>
-                    <div class="tag-container">
-                        ${(file.tags || []).map(t => `<span class="tag" onclick="quickSearch('#${t}')">${t}</span>`).join('')}
+            ${isEditing ? `
+                <div class="edit-mode">
+                    <input type="text" id="edit-name-${file.id}" value="${file.name}" placeholder="名称">
+                    <input type="text" id="edit-url-${file.id}" value="${file.url}" placeholder="链接">
+                    <div class="edit-actions">
+                        <button onclick="saveEdit('${file.id}')" class="btn-save">保存</button>
+                        <button onclick="cancelEdit()" class="btn-cancel">取消</button>
                     </div>
                 </div>
-                <div class="file-date">${file.date || ''}</div>
-            </div>
-            <div class="actions">
-                <a href="viewer.html?file=${encodeURIComponent(file.url)}" class="btn-action btn-view" target="_blank">查看</a>
-                <button onclick="editPrompt('${file.id}')" class="btn-action">编辑</button>
-                <button onclick="shareFile('${file.url}')" class="btn-action">分享</button>
-                <button onclick="deleteFile('${file.id}')" class="btn-action btn-del">删除</button>
-            </div>
+            ` : `
+                <div class="file-main">
+                    <div class="file-info">
+                        <a href="viewer.html?file=${encodeURIComponent(file.url)}" target="_blank" class="file-title-link">
+                            ${file.name}
+                        </a>
+                        <div class="tag-container">
+                            ${(file.tags || []).map(t => `<span class="tag" onclick="event.preventDefault(); quickSearch('#${t}')">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="file-date">${file.date || ''}</div>
+                </div>
+                <div class="actions">
+                    <button onclick="startEdit('${file.id}')" class="btn-action">编辑</button>
+                    <button onclick="shareFile('${file.url}')" class="btn-action">分享</button>
+                    <button onclick="deleteFile('${file.id}')" class="btn-action btn-del">删除</button>
+                </div>
+            `}
         </li>
-    `).join('');
+    `}).join('');
 }
 
-function quickSearch(tag) {
-    document.getElementById('searchInput').value = tag;
-    renderFileList();
+// 行内编辑逻辑
+function startEdit(id) { editingId = id; renderFileList(); }
+function cancelEdit() { editingId = null; renderFileList(); }
+
+async function saveEdit(id) {
+    const name = document.getElementById(`edit-name-${id}`).value;
+    const url = document.getElementById(`edit-url-${id}`).value;
+    const oldFile = files.find(f => f.id === id);
+    
+    const res = await apiFetch(API_URL, { 
+        method: 'POST', 
+        body: JSON.stringify({ ...oldFile, name, url }) 
+    });
+    
+    if (res && res.ok) {
+        showToast("修改成功");
+        editingId = null;
+        loadFiles();
+    }
 }
 
-// ... (loadFiles, deleteFile, shareFile, logout 等函数保持上一版本逻辑) ...
 async function loadFiles() {
     const loading = document.getElementById('loading');
-    loading.style.display = 'block';
+    if (loading) loading.style.display = 'block';
     const res = await apiFetch(API_URL);
     if (res && res.ok) files = await res.json();
-    loading.style.display = 'none';
+    if (loading) loading.style.display = 'none';
     renderFileList();
 }
 
@@ -128,22 +134,20 @@ async function deleteFile(id) {
 function shareFile(url) {
     const shareUrl = `${window.location.origin}/viewer.html?file=${encodeURIComponent(url)}`;
     navigator.clipboard.writeText(shareUrl);
-    showToast("链接已复制");
+    showToast("分享链接已复制");
+}
+
+function quickSearch(tag) {
+    document.getElementById('searchInput').value = tag;
+    renderFileList();
 }
 
 function logout() { localStorage.removeItem('pdf_access_token'); location.reload(); }
+
 function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2000);
-}
-function editPrompt(id) {
-    const file = files.find(f => f.id === id);
-    const newName = prompt("新名称:", file.name);
-    const newUrl = prompt("新地址:", file.url);
-    if (newName && newUrl) {
-        apiFetch(API_URL, { method: 'POST', body: JSON.stringify({ ...file, name: newName, url: newUrl }) }).then(() => loadFiles());
-    }
 }
 
 init();
