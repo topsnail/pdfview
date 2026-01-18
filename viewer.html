@@ -2,69 +2,32 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>PDF 预览 - 滚动模式</title>
+    <title>PDF 预览 - 强力中文支持版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        body { 
-            margin: 0; 
-            background: #525659; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-        }
-        
-        /* 固定顶栏样式 */
+        body { margin: 0; background: #525659; font-family: sans-serif; }
         .toolbar { 
-            position: fixed; 
-            top: 0; 
-            width: 100%; 
-            background: #323639; 
-            color: white; 
-            padding: 10px 0; 
-            display: flex; 
-            justify-content: center; 
-            gap: 15px; 
-            z-index: 1000; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            position: fixed; top: 0; width: 100%; background: #323639; 
+            color: white; padding: 10px 0; display: flex; justify-content: center; 
+            gap: 15px; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
-
         /* 滚动容器 */
         #viewer-container { 
-            margin-top: 60px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 20px;
-            gap: 20px; /* 页面之间的间距 */
+            margin-top: 60px; display: flex; flex-direction: column; 
+            align-items: center; padding: 20px; gap: 20px; 
         }
-
-        canvas { 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); 
-            background-color: white;
-            max-width: 100%; 
-        }
-
+        canvas { box-shadow: 0 0 10px rgba(0,0,0,0.5); background: white; max-width: 95%; }
         button { 
-            cursor: pointer; 
-            padding: 6px 14px; 
-            border-radius: 4px; 
-            border: 1px solid #444; 
-            background: #4a4a4a; 
-            color: white;
-            font-size: 13px;
-            transition: background 0.2s;
+            cursor: pointer; padding: 6px 14px; border-radius: 4px; 
+            border: 1px solid #444; background: #4a4a4a; color: white;
+            transition: 0.2s;
         }
-
         button:hover { background: #666; }
-        
         .divider { width: 1px; height: 20px; background: #555; align-self: center; }
-
         #loading-tip {
-            color: white;
-            position: fixed;
-            top: 70px;
-            background: rgba(0,0,0,0.6);
-            padding: 5px 15px;
-            border-radius: 20px;
-            display: none;
+            position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 8px 16px;
+            border-radius: 20px; font-size: 13px; z-index: 2000; display: none;
         }
     </style>
 </head>
@@ -73,20 +36,13 @@
         <button onclick="zoomOut()">缩小 -</button>
         <button onclick="zoomIn()">放大 +</button>
         <button onclick="fitWidth()">适应窗口</button>
-        
         <div class="divider"></div>
-        
-        <span id="page-status" style="font-size: 14px; line-height: 28px;">
-            共 <span id="page-count">0</span> 页
-        </span>
-
+        <span style="font-size: 14px; line-height: 28px;">共 <span id="page-count">0</span> 页</span>
         <div class="divider"></div>
-        
-        <button onclick="window.close()" style="background: #883333; border-color: #662222;">关闭</button>
+        <button onclick="window.close()" style="background: #833;">关闭</button>
     </div>
 
-    <div id="loading-tip">正在加载页面...</div>
-
+    <div id="loading-tip">正在加载中文解析库及文件内容...</div>
     <div id="viewer-container"></div>
 
     <script>
@@ -94,11 +50,11 @@
         const url = urlParams.get('file');
         
         let pdfDoc = null;
-        let currentScale = 1.5; // 初始缩放比例
+        let currentScale = 1.2; // 默认缩放
         const container = document.getElementById('viewer-container');
         const loadingTip = document.getElementById('loading-tip');
 
-        // 设置 PDF.js Worker 路径
+        // 配置 PDF.js Worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         if (url) {
@@ -106,72 +62,51 @@
         }
 
         async function loadPDF(pdfUrl) {
+            loadingTip.style.display = 'block';
             try {
-                loadingTip.style.display = 'block';
-                // 加载文档并支持中文 cMap
-                pdfDoc = await pdfjsLib.getDocument({
+                // 关键配置：增加 cmaps 支持
+                const loadingTask = pdfjsLib.getDocument({
                     url: pdfUrl,
+                    // cMapUrl 指定了中文字符映射文件的位置
                     cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-                    cMapPacked: true,
-                }).promise;
+                    // cMapPacked 必须设为 true，因为 CDN 上的文件是压缩过的 (.bcmap)
+                    cMapPacked: true, 
+                    // 禁用字体过滤，确保所有字符尽可能渲染
+                    disableFontFace: false 
+                });
 
+                pdfDoc = await loadingTask.promise;
                 document.getElementById('page-count').textContent = pdfDoc.numPages;
-                renderAllPages();
+                await renderAllPages();
             } catch (err) {
-                console.error(err);
-                alert("无法加载 PDF。请检查链接是否有效或是否存在跨域(CORS)限制。");
+                console.error("加载错误:", err);
+                alert("加载失败: 可能是链接失效或服务器禁止跨域(CORS)");
             } finally {
                 loadingTip.style.display = 'none';
             }
         }
 
-        // 循环渲染所有页面以实现滚动浏览
         async function renderAllPages() {
-            // 清空容器
-            container.innerHTML = '';
-            
-            // 循环每一页
+            container.innerHTML = ''; // 清空
             for (let i = 1; i <= pdfDoc.numPages; i++) {
                 const page = await pdfDoc.getPage(i);
                 const viewport = page.getViewport({ scale: currentScale });
                 
-                // 为每一页创建 Canvas
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
-                canvas.id = `page-${i}`;
-                
                 container.appendChild(canvas);
 
-                const renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                };
-                // 渲染页面
-                await page.render(renderContext).promise;
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
             }
         }
 
-        // --- 控制逻辑 ---
-
-        function zoomIn() {
-            currentScale += 0.2;
-            renderAllPages();
-        }
-
-        function zoomOut() {
-            if (currentScale <= 0.5) return;
-            currentScale -= 0.2;
-            renderAllPages();
-        }
-
-        // 适应窗口宽度
+        function zoomIn() { currentScale += 0.2; renderAllPages(); }
+        function zoomOut() { if (currentScale > 0.5) { currentScale -= 0.2; renderAllPages(); } }
         async function fitWidth() {
-            if (!pdfDoc) return;
-            const page = await pdfDoc.getPage(1); // 以第一页为基准计算比例
+            const page = await pdfDoc.getPage(1);
             const viewport = page.getViewport({ scale: 1 });
-            // 减去容器内边距和滚动条宽度
             currentScale = (window.innerWidth - 60) / viewport.width;
             renderAllPages();
         }
