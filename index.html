@@ -2,16 +2,13 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF 管理中心</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PDF 管理中心 Pro</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="login-container" class="auth-card" style="display: none;">
-        <div class="auth-header">
-            <h2>身份验证</h2>
-            <p>请输入管理密码以访问系统</p>
-        </div>
+        <div class="auth-header"><h2>身份验证</h2><p>请输入管理密码</p></div>
         <div class="auth-body">
             <input type="password" id="pw-input" placeholder="输入密码..." onkeyup="if(event.keyCode===13) handleLogin()">
             <button onclick="handleLogin()" class="btn-primary" style="width: 100%; margin-top: 15px;">进入系统</button>
@@ -20,18 +17,19 @@
 
     <div id="main-content" class="container" style="display: none;">
         <header>
-            <h1>📄 PDF 管理中心</h1>
+            <h1>📄 PDF 库</h1>
             <div class="header-tools">
-                <input type="text" id="searchInput" placeholder="搜索文件名..." oninput="renderFileList()">
-                <button onclick="logout()" class="btn-sm">退出登录</button>
+                <input type="text" id="searchInput" placeholder="搜索名称或 #标签..." oninput="renderFileList()">
+                <button onclick="logout()" class="btn-sm">退出</button>
             </div>
         </header>
 
         <section class="add-section">
-            <div class="input-group">
+            <div class="input-group-grid">
                 <input type="text" id="fileName" placeholder="文件名称">
-                <input type="text" id="fileUrl" placeholder="PDF 链接 (https://...)">
-                <button onclick="addFile()" class="btn-primary">添加/更新</button>
+                <input type="text" id="fileTags" placeholder="标签 (英文逗号分隔)">
+                <input type="text" id="fileUrl" placeholder="PDF 链接">
+                <button id="addBtn" onclick="addFile()" class="btn-primary">添加文件</button>
             </div>
         </section>
 
@@ -40,7 +38,6 @@
             <ul id="fileList"></ul>
         </section>
     </div>
-
     <div id="toast" class="toast"></div>
     <script src="script.js"></script>
 </body>
