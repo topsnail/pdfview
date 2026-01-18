@@ -2,45 +2,62 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF预览</title>
-    <link rel="stylesheet" href="style.css">
+    <title>PDF 预览</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        body { margin: 0; background: #525659; font-family: sans-serif; }
+        .toolbar { position: fixed; top: 0; width: 100%; background: #323639; color: white; padding: 10px; display: flex; justify-content: center; gap: 15px; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .canvas-container { margin-top: 60px; display: flex; flex-direction: column; align-items: center; }
+        canvas { box-shadow: 0 0 10px rgba(0,0,0,0.5); margin-bottom: 20px; max-width: 95%; }
+        button { cursor: pointer; padding: 5px 15px; }
+        #page-info { font-size: 14px; line-height: 28px; }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Main Content -->
-        <main class="viewer-container">
-            <div class="viewer-header">
-                <h2>PDF预览</h2>
-                <a href="index.html" class="back-btn">返回列表</a>
-            </div>
-            
-            <div class="viewer-content">
-                <div class="pdf-controls">
-                    <button id="prev-page" class="control-btn">上一页</button>
-                    <div class="page-info">
-                        <input type="number" id="page-num" min="1" value="1" class="page-input">
-                        <span>/</span>
-                        <span id="page-count">0</span>
-                    </div>
-                    <button id="next-page" class="control-btn">下一页</button>
-                </div>
-                <div id="pdf-container"></div>
-                <div id="loading">加载中...</div>
-            </div>
-        </main>
-        
-        <!-- Footer -->
-        <footer>
-            <p>&copy; 2026 PDF查看器</p>
-        </footer>
+    <div class="toolbar">
+        <button onclick="prevPage()">上一页</button>
+        <span id="page-info">第 <span id="page-num">0</span> / <span id="page-count">0</span> 页</span>
+        <button onclick="nextPage()">下一页</button>
+        <button onclick="window.close()" id="closeBtn">关闭</button>
     </div>
-    
-    <!-- 先加载PDF.js库 (使用360CDN镜像) -->
-    <script src="https://lib.baomitu.com/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://lib.baomitu.com/pdf.js/3.11.174/pdf.worker.min.js"></script>
-    
-    <!-- 再加载自定义脚本 -->
-    <script src="script.js"></script>
+
+    <div class="canvas-container">
+        <canvas id="pdf-render"></canvas>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const url = urlParams.get('file');
+        
+        let pdfDoc = null, pageNum = 1, ctx = document.getElementById('pdf-render').getContext('2d');
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        if (url) {
+            pdfjsLib.getDocument({
+                url: url,
+                cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                cMapPacked: true,
+            }).promise.then(doc => {
+                pdfDoc = doc;
+                document.getElementById('page-count').textContent = doc.numPages;
+                renderPage(pageNum);
+            }).catch(err => alert("PDF加载失败: " + err.message));
+        }
+
+        function renderPage(num) {
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.getElementById('pdf-render');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                page.render({ canvasContext: ctx, viewport: viewport });
+                document.getElementById('page-num').textContent = num;
+            });
+        }
+
+        function prevPage() { if (pageNum <= 1) return; pageNum--; renderPage(pageNum); }
+        function nextPage() { if (pageNum >= pdfDoc.numPages) return; pageNum++; renderPage(pageNum); }
+    </script>
 </body>
 </html>
