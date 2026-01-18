@@ -6,50 +6,51 @@
 body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
 .container { max-width: 800px; margin: 0 auto; padding: 20px 15px; box-sizing: border-box; }
 
-/* 头部: 搜索同行 */
+/* Header */
 .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
-.main-header h1 { font-size: 20px; margin: 0; white-space: nowrap; }
+.main-header h1 { font-size: 20px; margin: 0; color: var(--primary); }
 .header-tools { display: flex; gap: 8px; flex: 1; justify-content: flex-end; }
 #searchInput { width: 100%; max-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; }
 
-/* 输入区: 双行对齐 */
+/* Input Grid */
 .input-grid-v2 { background: var(--card); padding: 16px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
 .row { display: flex; gap: 8px; }
 .input-grid-v2 input { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-.btn-primary { background: var(--primary); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+.btn-primary { background: var(--primary); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; }
 
-/* 列表区: 文件名与按钮同行 */
+/* List */
 .file-card { background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); list-style: none; }
 .file-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .file-info { flex: 1; min-width: 0; }
 .file-title-link { font-weight: 600; text-decoration: none; color: var(--text); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
 .actions-inline { display: flex; gap: 5px; flex-shrink: 0; }
 .btn-icon { width: 32px; height: 32px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--sub); }
-.btn-del:hover { color: #ef4444; border-color: #fca5a5; }
+.btn-del:hover { color: #ef4444; border-color: #fca5a5; background: #fef2f2; }
 
-/* 标签与页脚 */
+/* Tags & Footer */
 .tag-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.tag { background: #f1f5f9; color: var(--primary); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
-.file-footer { margin-top: 4px; font-size: 10px; color: #94a3b8; }
+.tag { background: #eff6ff; color: var(--primary); font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
+.file-footer { margin-top: 6px; font-size: 10px; color: #94a3b8; border-top: 1px solid #f8fafc; padding-top: 4px; }
 
-/* 编辑模式 */
+/* Edit Mode */
 .edit-mode { display: flex; flex-direction: column; gap: 8px; }
-.edit-mode input { padding: 8px; border: 1px solid var(--primary); border-radius: 4px; }
+.edit-mode input { padding: 8px; border: 1px solid var(--primary); border-radius: 4px; font-size: 13px; }
 .edit-actions { display: flex; gap: 8px; }
+.btn-save { background: var(--primary); color: #fff; border: none; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+.btn-cancel { background: #f1f5f9; border: 1px solid var(--border); padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
 
 /* Toast */
-.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1e293b; color: #fff; padding: 10px 20px; border-radius: 50px; font-size: 13px; transition: 0.3s; opacity: 0; z-index: 9999; }
+.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1e293b; color: #fff; padding: 10px 20px; border-radius: 50px; font-size: 13px; transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); opacity: 0; z-index: 9999; }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-/* 认证卡片 */
+/* Auth */
 .auth-card { background: #fff; width: 280px; margin: 100px auto; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-.auth-card input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
+.auth-card input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
 
-/* 手机适配 */
+/* Mobile */
 @media (max-width: 600px) {
     .main-header h1 { font-size: 18px; }
     #searchInput { max-width: 130px; }
     .input-grid-v2 .row { flex-direction: column; }
-    .actions-inline { gap: 4px; }
-    .btn-icon { width: 28px; height: 28px; font-size: 11px; }
+    .btn-icon { width: 30px; height: 30px; font-size: 11px; }
 }

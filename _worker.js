@@ -11,11 +11,11 @@ export default {
 
     if (request.method === "OPTIONS") return new Response(null, { headers });
 
-    // 文件有效性预检
+    // 文件有效性预检 API
     if (url.pathname === '/api/check') {
       const target = url.searchParams.get('url');
       try {
-        const res = await fetch(target, { method: 'HEAD' });
+        const res = await fetch(target, { method: 'HEAD', timeout: 3000 });
         return new Response(JSON.stringify({ ok: res.ok }), { headers });
       } catch (e) {
         return new Response(JSON.stringify({ ok: false }), { headers });
@@ -23,12 +23,15 @@ export default {
     }
 
     const isAuth = request.headers.get('Authorization') === password;
+
     if (url.pathname.startsWith('/api/files')) {
       if (!isAuth) return new Response('Unauthorized', { status: 401, headers });
+
       if (request.method === 'GET') {
         const data = await kv.get('FILE_LIST');
         return new Response(data || '[]', { headers: { ...headers, 'Content-Type': 'application/json' } });
       }
+
       if (request.method === 'POST') {
         const file = await request.json();
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
@@ -37,6 +40,7 @@ export default {
         await kv.put('FILE_LIST', JSON.stringify(list));
         return new Response('OK', { headers });
       }
+
       if (request.method === 'DELETE') {
         const id = url.searchParams.get('id');
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
@@ -45,6 +49,7 @@ export default {
         return new Response('OK', { headers });
       }
     }
+    // 默认返回静态资源
     return env.ASSETS.fetch(request);
   }
 };

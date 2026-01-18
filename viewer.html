@@ -1,89 +1,83 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF 预览</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         body { margin: 0; background: #525659; font-family: sans-serif; }
-        .toolbar { position: fixed; top: 0; width: 100%; background: #323639; color: white; padding: 10px 0; display: flex; justify-content: center; gap: 15px; z-index: 1000; }
-        #viewer-container { margin-top: 60px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        .page-placeholder { background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); min-height: 500px; display: flex; align-items: center; justify-content: center; }
-        .page-display { background: #222; padding: 2px 12px; border-radius: 4px; font-size: 14px; }
-        button { cursor: pointer; padding: 6px 12px; border-radius: 4px; border: 1px solid #444; background: #4a4a4a; color: white; }
+        .toolbar { position: fixed; top: 0; width: 100%; height: 48px; background: #323639; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; box-sizing: border-box; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        #viewerContainer { margin-top: 48px; display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
+        .page-container { background: white; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        canvas { display: block; max-width: 100%; height: auto; }
+        .loading { color: #ccc; text-align: center; margin-top: 100px; }
+        .btn { background: #4a4d51; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <button onclick="changeScale(-0.2)">缩小 -</button>
-        <div class="page-display"><span id="curr-p">1</span> / <span id="total-p">0</span></div>
-        <button onclick="changeScale(0.2)">放大 +</button>
-        <button onclick="fitWidth()">适应宽度</button>
-        <button onclick="window.close()">关闭</button>
+        <div id="title">加载中...</div>
+        <div>
+            <span id="pageInfo">0 / 0</span>
+            <button class="btn" style="margin-left:10px" onclick="location.reload()">刷新</button>
+        </div>
     </div>
-    <div id="viewer-container"></div>
+    <div id="viewerContainer">
+        <div id="status" class="loading">正在准备渲染引擎...</div>
+    </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        // 使用后端代理解决跨域 [建议 1]
-        const rawUrl = urlParams.get('file');
-        const url = `/api/proxy?url=${encodeURIComponent(rawUrl)}`;
-        let pdfDoc = null, currentScale = 1.2;
-        
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // 懒加载观察器 [建议 2]
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(e => { if(e.isIntersecting) { renderPage(e.target); observer.unobserve(e.target); }});
-        }, { rootMargin: '400px' });
+        const params = new URLSearchParams(location.search);
+        const fileUrl = params.get('file');
 
-        if (rawUrl) {
-            pdfjsLib.getDocument({url, cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/', cMapPacked: true})
-                .promise.then(doc => {
-                    pdfDoc = doc;
-                    document.getElementById('total-p').textContent = doc.numPages;
-                    initPages();
-                }).catch(err => alert("无法加载PDF，请确认链接有效且非私密文件。"));
+        if (!fileUrl) {
+            document.getElementById('status').textContent = '未找到文件参数';
+        } else {
+            renderPDF();
         }
 
-        async function initPages() {
-            const container = document.getElementById('viewer-container');
-            container.innerHTML = '';
-            const page = await pdfDoc.getPage(1);
-            const vp = page.getViewport({scale: currentScale});
-            for (let i = 1; i <= pdfDoc.numPages; i++) {
-                const div = document.createElement('div');
-                div.className = 'page-placeholder';
-                div.style.width = vp.width + 'px';
-                div.style.height = vp.height + 'px';
-                div.dataset.page = i;
-                container.appendChild(div);
-                observer.observe(div);
+        async function renderPDF() {
+            const container = document.getElementById('viewerContainer');
+            const status = document.getElementById('status');
+            
+            try {
+                // 使用跨域代理或直接加载
+                const loadingTask = pdfjsLib.getDocument({
+                    url: fileUrl,
+                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                    cMapPacked: true,
+                });
+
+                const pdf = await loadingTask.promise;
+                status.remove();
+                document.getElementById('title').textContent = 'PDF 预览';
+                document.getElementById('pageInfo').textContent = `共 ${pdf.numPages} 页`;
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'page-container';
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    pageDiv.appendChild(canvas);
+                    container.appendChild(pageDiv);
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                }
+            } catch (e) {
+                status.textContent = '加载失败: ' + e.message;
+                console.error(e);
             }
         }
-
-        async function renderPage(el) {
-            const page = await pdfDoc.getPage(parseInt(el.dataset.page));
-            const vp = page.getViewport({scale: currentScale});
-            const canvas = document.createElement('canvas');
-            canvas.height = vp.height; canvas.width = vp.width;
-            el.innerHTML = ''; el.appendChild(canvas);
-            page.render({canvasContext: canvas.getContext('2d'), viewport: vp});
-        }
-
-        window.onscroll = () => {
-            const placeholders = document.querySelectorAll('.page-placeholder');
-            placeholders.forEach(p => {
-                if(p.getBoundingClientRect().top < window.innerHeight/2) 
-                    document.getElementById('curr-p').textContent = p.dataset.page;
-            });
-        };
-
-        function changeScale(delta) { currentScale += delta; initPages(); }
-        function fitWidth() { pdfDoc.getPage(1).then(p => { 
-            currentScale = (window.innerWidth - 60) / p.getViewport({scale:1}).width; 
-            initPages(); 
-        });}
     </script>
 </body>
 </html>

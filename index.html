@@ -8,9 +8,9 @@
 </head>
 <body>
     <div id="login-container" class="auth-card" style="display: none;">
-        <h2>验证</h2>
-        <input type="password" id="pw-input" placeholder="密码..." onkeyup="if(event.keyCode===13) handleLogin()">
-        <button onclick="handleLogin()" class="btn-primary" style="width:100%">进入</button>
+        <h2>身份验证</h2>
+        <input type="password" id="pw-input" placeholder="输入管理密码..." onkeyup="if(event.keyCode===13) handleLogin()">
+        <button onclick="handleLogin()" class="btn-primary" style="width:100%">进入系统</button>
     </div>
 
     <div id="main-content" class="container" style="display: none;">
@@ -26,11 +26,11 @@
             <div class="input-grid-v2">
                 <div class="row">
                     <input type="text" id="fileName" placeholder="文件名称">
-                    <input type="text" id="fileTags" placeholder="标签 (逗号分隔)">
+                    <input type="text" id="fileTags" placeholder="标签 (英文逗号分隔)">
                 </div>
                 <div class="row">
                     <input type="text" id="fileUrl" placeholder="PDF 链接 (https://...)">
-                    <button id="addBtn" onclick="addFile()" class="btn-primary">添加</button>
+                    <button id="addBtn" onclick="addFile()" class="btn-primary">添加文件</button>
                 </div>
             </div>
         </section>
@@ -39,6 +39,7 @@
             <ul id="fileList"></ul>
         </section>
     </div>
+
     <div id="toast" class="toast"></div>
     <script src="script.js"></script>
 </body>
