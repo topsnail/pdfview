@@ -1,68 +1,414 @@
-:root { --p: #2563eb; --bg: #f1f5f9; --text: #1e293b; }
-body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
-
-.container { max-width: 800px; margin: 0 auto; padding: 15px; }
-
-/* 输入组网格调整：标签移到链接右边 */
-.input-group-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 10px;
-    background: white;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+/* -- 基础变量与全局样式 -- */
+:root {
+    --primary-color: #3b82f6; /* 蓝色 */
+    --bg-color: #f8fafc; /* 浅灰背景 */
+    --card-bg: #ffffff; /* 卡片白色 */
+    --text-color: #1f2937; /* 深色文字 */
+    --subtle-text: #6b7280; /* 辅助文字 */
+    --border-color: #e5e7eb; /* 边框 */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
-.input-group-grid input { padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; }
-.input-group-grid button { grid-column: span 2; }
 
-/* 文件名作为链接的样式 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    background-color: var(--bg-color);
+    margin: 0;
+    padding: 0;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+/* -- 容器与头部 -- */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px 15px;
+    box-sizing: border-box;
+}
+
+.main-header {
+    display: flex;
+    flex-wrap: wrap; /* 允许换行 */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    gap: 15px; /* 元素间距 */
+}
+
+.main-header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-color);
+    white-space: nowrap; /* 防止标题折行 */
+}
+
+.header-tools {
+    display: flex;
+    flex: 1; /* 占据剩余空间 */
+    gap: 10px;
+    justify-content: flex-end; /* 靠右对齐 */
+    align-items: center;
+}
+
+#searchInput {
+    flex: 1;
+    max-width: 280px; /* 限制最大宽度 */
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: var(--card-bg);
+    transition: all 0.2s ease-in-out;
+}
+#searchInput:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    outline: none;
+}
+
+/* -- 按钮基础样式 -- */
+.btn-primary, .btn-sm, .btn-save, .btn-cancel, .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+}
+.btn-primary:hover {
+    background-color: #2563eb;
+    box-shadow: var(--shadow-sm);
+}
+.btn-primary:active {
+    background-color: #1d4ed8;
+}
+
+.btn-sm {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+}
+.btn-sm:hover {
+    background-color: var(--bg-color);
+}
+.btn-sm:active {
+    background-color: #e0e0e0;
+}
+
+
+/* -- 添加文件区域 -- */
+.input-grid-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 30px;
+}
+
+.input-grid-v2 .row {
+    display: flex;
+    gap: 10px;
+}
+
+.input-grid-v2 input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: var(--bg-color); /* 稍微深一点的背景色 */
+    transition: all 0.2s ease-in-out;
+}
+.input-grid-v2 input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    outline: none;
+    background-color: var(--card-bg);
+}
+
+.input-grid-v2 .btn-primary {
+    padding: 10px 20px;
+    font-size: 15px;
+}
+
+/* -- 文件列表 -- */
+#fileList {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.file-card {
+    background-color: var(--card-bg);
+    margin-bottom: 12px;
+    padding: 18px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column; /* 默认手机端堆叠 */
+    gap: 12px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.file-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.file-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap; /* 允许信息换行 */
+    gap: 8px;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0; /* 允许内容缩小 */
+}
+
 .file-title-link {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 600;
-    color: var(--text);
+    color: var(--text-color);
     text-decoration: none;
     display: block;
     margin-bottom: 4px;
-    transition: color 0.2s;
+    transition: color 0.2s ease-in-out;
+    word-break: break-word; /* 防止长链接溢出 */
 }
-.file-title-link:hover { color: var(--p); text-decoration: underline; }
+.file-title-link:hover {
+    color: var(--primary-color);
+}
 
-/* 文件卡片 */
-.file-card { background: white; margin-bottom: 12px; padding: 16px; border-radius: 12px; list-style: none; }
-.file-main { display: flex; justify-content: space-between; align-items: flex-start; }
+.file-date {
+    font-size: 12px;
+    color: var(--subtle-text);
+    white-space: nowrap; /* 防止日期折行 */
+}
 
-/* 行内编辑模式样式 */
-.edit-mode { display: flex; flex-direction: column; gap: 10px; }
-.edit-mode input { padding: 8px; border: 1px solid var(--p); border-radius: 4px; }
-.edit-actions { display: flex; gap: 10px; }
-.btn-save { background: var(--p); color: white; border: none; padding: 5px 15px; border-radius: 4px; }
-.btn-cancel { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 5px 15px; border-radius: 4px; }
+.tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
 
-/* 标签与操作 */
-.tag-container { display: flex; flex-wrap: wrap; gap: 5px; }
-.tag { background: #e2e8f0; font-size: 11px; padding: 2px 8px; border-radius: 4px; cursor: pointer; }
-.actions { display: flex; gap: 8px; margin-top: 12px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
-.btn-action { font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; cursor: pointer; }
-.btn-del { color: #ef4444; border-color: #fee2e2; }
+.tag {
+    background-color: #e0f2fe; /* 浅蓝色标签背景 */
+    color: #0b60b0; /* 深蓝色标签文字 */
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+.tag:hover {
+    background-color: #93c5fd;
+    color: white;
+}
 
-/* 底部垂直居中 Toast */
+.actions {
+    display: flex;
+    flex-wrap: wrap; /* 按钮也允许换行 */
+    gap: 8px;
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-action {
+    flex: 1; /* 按钮自动填充空间 */
+    min-width: 80px; /* 最小宽度，防止过小 */
+    background-color: var(--card-bg);
+    color: var(--subtle-text);
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+.btn-action:hover {
+    background-color: var(--bg-color);
+}
+
+.btn-del {
+    color: #ef4444; /* 红色 */
+    border-color: #fca5a5; /* 浅红色边框 */
+}
+.btn-del:hover {
+    background-color: #fee2e2; /* 浅红色背景 */
+}
+
+/* -- 行内编辑模式 -- */
+.edit-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.edit-mode input {
+    padding: 10px 15px;
+    border: 1px solid var(--primary-color); /* 编辑时高亮边框 */
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: var(--bg-color);
+}
+.edit-mode input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    outline: none;
+}
+.edit-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+.btn-save {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+}
+.btn-cancel {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+}
+
+/* -- 登录卡片 -- */
+.auth-card {
+    background-color: var(--card-bg);
+    width: 90%;
+    max-width: 380px;
+    margin: 100px auto;
+    padding: 35px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+.auth-card h2 {
+    margin-top: 0;
+    font-size: 24px;
+    color: var(--primary-color);
+}
+.auth-card input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: all 0.2s ease-in-out;
+}
+.auth-card input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    outline: none;
+}
+
+/* -- Toast 提示 -- */
 .toast {
     position: fixed;
-    bottom: 20px;
+    bottom: 30px;
     left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: rgba(30, 41, 59, 0.9);
+    transform: translateX(-50%) translateY(100px); /* 初始位置在屏幕外 */
+    background-color: #1f2937; /* 深色背景 */
     color: white;
-    padding: 10px 25px;
+    padding: 12px 25px;
     border-radius: 50px;
     font-size: 14px;
-    transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s;
     opacity: 0;
-    z-index: 9999;
+    transition: transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.4s;
+    z-index: 10000;
+    pointer-events: none; /* 允许点击穿透 */
+    box-shadow: var(--shadow-md);
 }
-.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
 
-/* 登录卡片 */
-.auth-card { background: white; width: 300px; margin: 100px auto; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-.btn-primary { background: var(--p); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; }
+
+/* -- 媒体查询 (手机端适配) -- */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px 10px; /* 减小侧边内边距 */
+    }
+
+    .main-header {
+        flex-direction: column; /* 标题和工具栏堆叠 */
+        align-items: flex-start; /* 左对齐 */
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .main-header h1 {
+        font-size: 22px;
+    }
+    .header-tools {
+        width: 100%; /* 工具栏占据全宽 */
+        justify-content: space-between; /* 搜索和退出按钮分散对齐 */
+    }
+    #searchInput {
+        max-width: none; /* 搜索框不再限制最大宽度 */
+    }
+
+    .input-grid-v2 .row {
+        flex-direction: column; /* 添加文件的输入框堆叠 */
+        gap: 10px;
+    }
+
+    .input-grid-v2 .btn-primary {
+        width: 100%; /* 按钮占据全宽 */
+    }
+
+    .file-card {
+        padding: 15px;
+    }
+
+    .file-main {
+        flex-direction: column; /* 文件信息堆叠 */
+        align-items: flex-start;
+    }
+
+    .file-date {
+        margin-top: 5px; /* 日期略微下移 */
+    }
+
+    .actions {
+        flex-direction: column; /* 操作按钮堆叠 */
+        gap: 8px;
+    }
+    .btn-action {
+        width: 100%; /* 操作按钮占据全宽 */
+        padding: 10px 12px;
+    }
+    
+    .edit-mode input {
+        width: 100%;
+    }
+    .edit-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .btn-save, .btn-cancel {
+        width: 100%;
+    }
+}

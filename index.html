@@ -16,7 +16,7 @@
     </div>
 
     <div id="main-content" class="container" style="display: none;">
-        <header>
+        <header class="main-header">
             <h1>📄 PDF 库</h1>
             <div class="header-tools">
                 <input type="text" id="searchInput" placeholder="搜索名称或 #标签..." oninput="renderFileList()">
@@ -25,11 +25,15 @@
         </header>
 
         <section class="add-section">
-            <div class="input-group-grid">
-                <input type="text" id="fileName" placeholder="文件名称" style="grid-column: span 2;">
-                <input type="text" id="fileUrl" placeholder="PDF 链接">
-                <input type="text" id="fileTags" placeholder="标签 (逗号分隔)">
-                <button id="addBtn" onclick="addFile()" class="btn-primary">添加文件</button>
+            <div class="input-grid-v2">
+                <div class="row">
+                    <input type="text" id="fileName" placeholder="文件名称">
+                    <input type="text" id="fileTags" placeholder="标签 (逗号分隔)">
+                </div>
+                <div class="row">
+                    <input type="text" id="fileUrl" placeholder="PDF 链接 (https://...)">
+                    <button id="addBtn" onclick="addFile()" class="btn-primary">添加文件</button>
+                </div>
             </div>
         </section>
 
@@ -40,7 +44,6 @@
     </div>
 
     <div id="toast" class="toast"></div>
-
     <script src="script.js"></script>
 </body>
 </html>

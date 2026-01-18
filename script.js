@@ -1,7 +1,7 @@
 const API_URL = '/api/files';
 let files = [];
 let accessPassword = localStorage.getItem('pdf_access_token');
-let editingId = null; // 记录当前正在行内编辑的ID
+let editingId = null;
 
 function init() {
     if (!accessPassword) {
@@ -25,7 +25,7 @@ function handleLogin() {
 async function apiFetch(url, options = {}) {
     options.headers = { ...options.headers, 'Authorization': accessPassword };
     const res = await fetch(url, options);
-    if (res.status === 401) { logout(); return null; }
+    if (res && res.status === 401) { logout(); return null; }
     return res;
 }
 
@@ -45,7 +45,7 @@ async function addFile() {
 
     const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(fileData) });
     if (res && res.ok) {
-        showToast("已保存");
+        showToast("已添加");
         ["fileName", "fileUrl", "fileTags"].forEach(id => document.getElementById(id).value = '');
         loadFiles();
     }
@@ -67,6 +67,7 @@ function renderFileList() {
             ${isEditing ? `
                 <div class="edit-mode">
                     <input type="text" id="edit-name-${file.id}" value="${file.name}" placeholder="名称">
+                    <input type="text" id="edit-tags-${file.id}" value="${(file.tags || []).join(', ')}" placeholder="标签 (逗号分隔)">
                     <input type="text" id="edit-url-${file.id}" value="${file.url}" placeholder="链接">
                     <div class="edit-actions">
                         <button onclick="saveEdit('${file.id}')" class="btn-save">保存</button>
@@ -80,7 +81,7 @@ function renderFileList() {
                             ${file.name}
                         </a>
                         <div class="tag-container">
-                            ${(file.tags || []).map(t => `<span class="tag" onclick="event.preventDefault(); quickSearch('#${t}')">${t}</span>`).join('')}
+                            ${(file.tags || []).map(t => `<span class="tag" onclick="quickSearch('#${t}')">${t}</span>`).join('')}
                         </div>
                     </div>
                     <div class="file-date">${file.date || ''}</div>
@@ -95,22 +96,27 @@ function renderFileList() {
     `}).join('');
 }
 
-// 行内编辑逻辑
 function startEdit(id) { editingId = id; renderFileList(); }
 function cancelEdit() { editingId = null; renderFileList(); }
 
 async function saveEdit(id) {
     const name = document.getElementById(`edit-name-${id}`).value;
     const url = document.getElementById(`edit-url-${id}`).value;
+    const tagsRaw = document.getElementById(`edit-tags-${id}`).value;
     const oldFile = files.find(f => f.id === id);
     
     const res = await apiFetch(API_URL, { 
         method: 'POST', 
-        body: JSON.stringify({ ...oldFile, name, url }) 
+        body: JSON.stringify({ 
+            ...oldFile, 
+            name, 
+            url, 
+            tags: tagsRaw ? tagsRaw.split(',').map(t => t.trim()) : [] 
+        }) 
     });
     
     if (res && res.ok) {
-        showToast("修改成功");
+        showToast("已更新");
         editingId = null;
         loadFiles();
     }
@@ -134,7 +140,7 @@ async function deleteFile(id) {
 function shareFile(url) {
     const shareUrl = `${window.location.origin}/viewer.html?file=${encodeURIComponent(url)}`;
     navigator.clipboard.writeText(shareUrl);
-    showToast("分享链接已复制");
+    showToast("链接已复制");
 }
 
 function quickSearch(tag) {
