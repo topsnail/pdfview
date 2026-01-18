@@ -11,37 +11,24 @@ export default {
 
     if (request.method === "OPTIONS") return new Response(null, { headers });
 
-    // CORS 代理
-    if (url.pathname === '/api/proxy') {
-      const target = url.searchParams.get('url');
-      const res = await fetch(target);
-      const newRes = new Response(res.body, res);
-      newRes.headers.set('Access-Control-Allow-Origin', '*');
-      return newRes;
-    }
-
-    // --- 新增：文件有效性预检 [建议 2] ---
+    // 文件有效性预检
     if (url.pathname === '/api/check') {
       const target = url.searchParams.get('url');
       try {
         const res = await fetch(target, { method: 'HEAD' });
-        const isPdf = res.headers.get('content-type')?.includes('pdf');
-        return new Response(JSON.stringify({ ok: res.ok, isPdf }), { headers });
+        return new Response(JSON.stringify({ ok: res.ok }), { headers });
       } catch (e) {
         return new Response(JSON.stringify({ ok: false }), { headers });
       }
     }
 
     const isAuth = request.headers.get('Authorization') === password;
-
     if (url.pathname.startsWith('/api/files')) {
       if (!isAuth) return new Response('Unauthorized', { status: 401, headers });
-
       if (request.method === 'GET') {
         const data = await kv.get('FILE_LIST');
         return new Response(data || '[]', { headers: { ...headers, 'Content-Type': 'application/json' } });
       }
-
       if (request.method === 'POST') {
         const file = await request.json();
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
@@ -50,7 +37,6 @@ export default {
         await kv.put('FILE_LIST', JSON.stringify(list));
         return new Response('OK', { headers });
       }
-
       if (request.method === 'DELETE') {
         const id = url.searchParams.get('id');
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
