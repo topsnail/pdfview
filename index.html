@@ -10,14 +10,17 @@
     <div class="container">
         <header>
             <h1>📄 PDF 管理中心</h1>
-            <p>管理您的在线 PDF 文档</p>
+            <div class="header-tools">
+                <input type="text" id="searchInput" placeholder="搜索文件名..." oninput="renderFileList()">
+                <button onclick="logout()" class="btn-sm">退出登录</button>
+            </div>
         </header>
 
         <section class="add-section">
             <div class="input-group">
                 <input type="text" id="fileName" placeholder="文件名称">
                 <input type="text" id="fileUrl" placeholder="PDF 链接 (https://...)">
-                <button onclick="addFile()" class="btn-primary">添加文件</button>
+                <button onclick="addFile()" class="btn-primary">添加/更新</button>
             </div>
         </section>
 
@@ -26,9 +29,7 @@
             <ul id="fileList"></ul>
         </section>
     </div>
-
     <div id="toast" class="toast"></div>
-
     <script src="script.js"></script>
 </body>
 </html>
