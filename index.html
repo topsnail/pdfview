@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>极简 PDF 查看器</title>
+    <title>PDF 管理中心</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,14 +15,14 @@
 
         <section class="add-section">
             <div class="input-group">
-                <input type="text" id="fileName" placeholder="文件名称 (例如: 学习笔记)">
+                <input type="text" id="fileName" placeholder="文件名称">
                 <input type="text" id="fileUrl" placeholder="PDF 链接 (https://...)">
                 <button onclick="addFile()" class="btn-primary">添加文件</button>
             </div>
         </section>
 
         <section class="list-section">
-            <div id="loading" class="hidden">加载中...</div>
+            <div id="loading" class="loading-box">加载中...</div>
             <ul id="fileList"></ul>
         </section>
     </div>
