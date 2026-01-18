@@ -3,36 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF查看器</title>
+    <title>极简 PDF 查看器</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Main Content -->
-        <main>
-            <!-- Add PDF Form -->
-            <div class="form-container">
-                <h2>添加PDF文件</h2>
-                <form id="add-form">
-                    <input type="text" id="pdf-name" placeholder="文件名称" required>
-                    <input type="url" id="pdf-url" placeholder="PDF文件URL" required>
-                    <button type="submit">添加</button>
-                </form>
+    <div class="container">
+        <header>
+            <h1>📄 PDF 管理中心</h1>
+            <p>管理您的在线 PDF 文档</p>
+        </header>
+
+        <section class="add-section">
+            <div class="input-group">
+                <input type="text" id="fileName" placeholder="文件名称 (例如: 学习笔记)">
+                <input type="text" id="fileUrl" placeholder="PDF 链接 (https://...)">
+                <button onclick="addFile()" class="btn-primary">添加文件</button>
             </div>
-            
-            <!-- Files List -->
-            <div class="files-container">
-                <h2>我的PDF文件</h2>
-                <div id="files-list"></div>
-            </div>
-        </main>
-        
-        <!-- Footer -->
-        <footer>
-            <p>&copy; 2026 PDF查看器</p>
-        </footer>
+        </section>
+
+        <section class="list-section">
+            <div id="loading" class="hidden">加载中...</div>
+            <ul id="fileList"></ul>
+        </section>
     </div>
-    
+
+    <div id="toast" class="toast"></div>
+
     <script src="script.js"></script>
 </body>
 </html>
