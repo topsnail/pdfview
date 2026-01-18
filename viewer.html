@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF预览</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Content -->
+        <main class="viewer-container">
+            <div class="viewer-header">
+                <h2>PDF预览</h2>
+                <a href="index.html" class="back-btn">返回列表</a>
+            </div>
+            
+            <div class="viewer-content">
+                <div class="pdf-controls">
+                    <button id="prev-page" class="control-btn">上一页</button>
+                    <div class="page-info">
+                        <input type="number" id="page-num" min="1" value="1" class="page-input">
+                        <span>/</span>
+                        <span id="page-count">0</span>
+                    </div>
+                    <button id="next-page" class="control-btn">下一页</button>
+                </div>
+                <div id="pdf-container"></div>
+                <div id="loading">加载中...</div>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2026 PDF查看器</p>
+        </footer>
+    </div>
+    
+    <!-- 先加载PDF.js库 (使用360CDN镜像) -->
+    <script src="https://lib.baomitu.com/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://lib.baomitu.com/pdf.js/3.11.174/pdf.worker.min.js"></script>
+    
+    <!-- 再加载自定义脚本 -->
+    <script src="script.js"></script>
+</body>
+</html>

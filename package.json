@@ -1,0 +1,22 @@
+{
+  "name": "pdfview",
+  "version": "1.0.0",
+  "description": "PDF查看器Web应用",
+  "main": "worker.js",
+  "scripts": {
+    "dev": "echo '开发模式：请使用本地服务器或Cloudflare Pages预览'",
+    "build": "echo '构建完成'"
+  },
+  "keywords": [
+    "pdf",
+    "viewer",
+    "cloudflare",
+    "pages"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "pdfjs-dist": "^4.4.168"
+  },
+  "devDependencies": {}
+}
