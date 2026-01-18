@@ -2,61 +2,55 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>PDF 极速预览</title>
+    <title>PDF 预览</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         body { margin: 0; background: #525659; font-family: sans-serif; }
         .toolbar { position: fixed; top: 0; width: 100%; background: #323639; color: white; padding: 10px 0; display: flex; justify-content: center; gap: 15px; z-index: 1000; }
         #viewer-container { margin-top: 60px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        /* 预留占位符，防止滚动条抖动 */
-        .page-placeholder { background: #444; box-shadow: 0 0 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #888; }
-        canvas { background: white; max-width: 98%; }
+        .page-placeholder { background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); min-height: 500px; display: flex; align-items: center; justify-content: center; }
+        .page-display { background: #222; padding: 2px 12px; border-radius: 4px; font-size: 14px; }
         button { cursor: pointer; padding: 6px 12px; border-radius: 4px; border: 1px solid #444; background: #4a4a4a; color: white; }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <button onclick="zoomOut()">缩小 -</button>
-        <div style="background:#222; padding: 2px 10px; border-radius:4px;"><span id="curr-p">1</span> / <span id="total-p">0</span></div>
-        <button onclick="zoomIn()">放大 +</button>
+        <button onclick="changeScale(-0.2)">缩小 -</button>
+        <div class="page-display"><span id="curr-p">1</span> / <span id="total-p">0</span></div>
+        <button onclick="changeScale(0.2)">放大 +</button>
         <button onclick="fitWidth()">适应宽度</button>
+        <button onclick="window.close()">关闭</button>
     </div>
     <div id="viewer-container"></div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        // 使用代理路由解决跨域 [建议 1]
+        // 使用后端代理解决跨域 [建议 1]
         const rawUrl = urlParams.get('file');
         const url = `/api/proxy?url=${encodeURIComponent(rawUrl)}`;
-        
         let pdfDoc = null, currentScale = 1.2;
+        
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         // 懒加载观察器 [建议 2]
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    renderPage(entry.target);
-                    observer.unobserve(entry.target); // 渲染后停止观察
-                }
-            });
-        }, { rootMargin: '200px' });
+            entries.forEach(e => { if(e.isIntersecting) { renderPage(e.target); observer.unobserve(e.target); }});
+        }, { rootMargin: '400px' });
 
         if (rawUrl) {
             pdfjsLib.getDocument({url, cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/', cMapPacked: true})
                 .promise.then(doc => {
                     pdfDoc = doc;
                     document.getElementById('total-p').textContent = doc.numPages;
-                    initPlaceholders();
-                });
+                    initPages();
+                }).catch(err => alert("无法加载PDF，请确认链接有效且非私密文件。"));
         }
 
-        async function initPlaceholders() {
+        async function initPages() {
             const container = document.getElementById('viewer-container');
             container.innerHTML = '';
-            const firstPage = await pdfDoc.getPage(1);
-            const vp = firstPage.getViewport({scale: currentScale});
-            
+            const page = await pdfDoc.getPage(1);
+            const vp = page.getViewport({scale: currentScale});
             for (let i = 1; i <= pdfDoc.numPages; i++) {
                 const div = document.createElement('div');
                 div.className = 'page-placeholder';
@@ -64,36 +58,31 @@
                 div.style.height = vp.height + 'px';
                 div.dataset.page = i;
                 container.appendChild(div);
-                observer.observe(div); // 开始观察
+                observer.observe(div);
             }
         }
 
-        async function renderPage(placeholder) {
-            const num = parseInt(placeholder.dataset.page);
-            const page = await pdfDoc.getPage(num);
+        async function renderPage(el) {
+            const page = await pdfDoc.getPage(parseInt(el.dataset.page));
             const vp = page.getViewport({scale: currentScale});
             const canvas = document.createElement('canvas');
             canvas.height = vp.height; canvas.width = vp.width;
-            placeholder.innerHTML = ''; // 清除“加载中”字样
-            placeholder.appendChild(canvas);
-            await page.render({canvasContext: canvas.getContext('2d'), viewport: vp}).promise;
+            el.innerHTML = ''; el.appendChild(canvas);
+            page.render({canvasContext: canvas.getContext('2d'), viewport: vp});
         }
 
-        // 滚动更新页码
         window.onscroll = () => {
-            const divs = document.querySelectorAll('.page-placeholder');
-            divs.forEach(div => {
-                if (div.getBoundingClientRect().top < window.innerHeight / 2) {
-                    document.getElementById('curr-p').textContent = div.dataset.page;
-                }
+            const placeholders = document.querySelectorAll('.page-placeholder');
+            placeholders.forEach(p => {
+                if(p.getBoundingClientRect().top < window.innerHeight/2) 
+                    document.getElementById('curr-p').textContent = p.dataset.page;
             });
         };
 
-        function zoomIn() { currentScale += 0.2; initPlaceholders(); }
-        function zoomOut() { if(currentScale > 0.5) {currentScale -= 0.2; initPlaceholders(); }}
+        function changeScale(delta) { currentScale += delta; initPages(); }
         function fitWidth() { pdfDoc.getPage(1).then(p => { 
             currentScale = (window.innerWidth - 60) / p.getViewport({scale:1}).width; 
-            initPlaceholders(); 
+            initPages(); 
         });}
     </script>
 </body>
