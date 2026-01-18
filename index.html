@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PDF 管理中心 Pro</title>
+    <title>PDF 管理中心</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="login-container" class="auth-card" style="display: none;">
-        <div class="auth-header"><h2>身份验证</h2><p>请输入管理密码</p></div>
+        <div class="auth-header"><h2>身份验证</h2></div>
         <div class="auth-body">
-            <input type="password" id="pw-input" placeholder="输入密码..." onkeyup="if(event.keyCode===13) handleLogin()">
-            <button onclick="handleLogin()" class="btn-primary" style="width: 100%; margin-top: 15px;">进入系统</button>
+            <input type="password" id="pw-input" placeholder="输入管理密码..." onkeyup="if(event.keyCode===13) handleLogin()">
+            <button onclick="handleLogin()" class="btn-primary" style="width: 100%; margin-top: 15px;">进入</button>
         </div>
     </div>
 
@@ -26,9 +26,9 @@
 
         <section class="add-section">
             <div class="input-group-grid">
-                <input type="text" id="fileName" placeholder="文件名称">
-                <input type="text" id="fileTags" placeholder="标签 (英文逗号分隔)">
+                <input type="text" id="fileName" placeholder="文件名称" style="grid-column: span 2;">
                 <input type="text" id="fileUrl" placeholder="PDF 链接">
+                <input type="text" id="fileTags" placeholder="标签 (逗号分隔)">
                 <button id="addBtn" onclick="addFile()" class="btn-primary">添加文件</button>
             </div>
         </section>
@@ -38,7 +38,9 @@
             <ul id="fileList"></ul>
         </section>
     </div>
+
     <div id="toast" class="toast"></div>
+
     <script src="script.js"></script>
 </body>
 </html>
