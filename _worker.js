@@ -3,7 +3,6 @@ export default {
     const url = new URL(request.url);
     const password = env.ACCESS_PASSWORD;
     const kv = env.PDF_FILES;
-
     const headers = { 
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',
@@ -12,7 +11,7 @@ export default {
 
     if (request.method === "OPTIONS") return new Response(null, { headers });
 
-    // CORS 代理 [建议 1]
+    // CORS 代理
     if (url.pathname === '/api/proxy') {
       const target = url.searchParams.get('url');
       const res = await fetch(target);
@@ -21,7 +20,18 @@ export default {
       return newRes;
     }
 
-    // 鉴权 [建议 3]
+    // --- 新增：文件有效性预检 [建议 2] ---
+    if (url.pathname === '/api/check') {
+      const target = url.searchParams.get('url');
+      try {
+        const res = await fetch(target, { method: 'HEAD' });
+        const isPdf = res.headers.get('content-type')?.includes('pdf');
+        return new Response(JSON.stringify({ ok: res.ok, isPdf }), { headers });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false }), { headers });
+      }
+    }
+
     const isAuth = request.headers.get('Authorization') === password;
 
     if (url.pathname.startsWith('/api/files')) {
@@ -49,7 +59,6 @@ export default {
         return new Response('OK', { headers });
       }
     }
-
     return env.ASSETS.fetch(request);
   }
 };
