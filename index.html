@@ -3,23 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PDF 管理中心</title>
+    <title>PDF 库 | 管理中心</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="login-container" class="auth-card" style="display: none;">
-        <div class="auth-header"><h2>身份验证</h2></div>
-        <div class="auth-body">
-            <input type="password" id="pw-input" placeholder="输入管理密码..." onkeyup="if(event.keyCode===13) handleLogin()">
-            <button onclick="handleLogin()" class="btn-primary" style="width: 100%; margin-top: 15px;">进入</button>
-        </div>
+        <h2>验证</h2>
+        <input type="password" id="pw-input" placeholder="密码..." onkeyup="if(event.keyCode===13) handleLogin()">
+        <button onclick="handleLogin()" class="btn-primary" style="width:100%">进入</button>
     </div>
 
     <div id="main-content" class="container" style="display: none;">
         <header class="main-header">
             <h1>📄 PDF 库</h1>
             <div class="header-tools">
-                <input type="text" id="searchInput" placeholder="搜索名称或 #标签..." oninput="renderFileList()">
+                <input type="text" id="searchInput" placeholder="搜索或 #标签..." oninput="renderFileList()">
                 <button onclick="logout()" class="btn-sm">退出</button>
             </div>
         </header>
@@ -32,17 +30,15 @@
                 </div>
                 <div class="row">
                     <input type="text" id="fileUrl" placeholder="PDF 链接 (https://...)">
-                    <button id="addBtn" onclick="addFile()" class="btn-primary">添加文件</button>
+                    <button id="addBtn" onclick="addFile()" class="btn-primary">添加</button>
                 </div>
             </div>
         </section>
 
         <section class="list-section">
-            <div id="loading" class="loading-box">加载中...</div>
             <ul id="fileList"></ul>
         </section>
     </div>
-
     <div id="toast" class="toast"></div>
     <script src="script.js"></script>
 </body>
