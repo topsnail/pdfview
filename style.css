@@ -1,44 +1,68 @@
-/* 原有基础变量 */
-:root { --p: #2563eb; --bg: #f8fafc; }
-body { font-family: system-ui; background: var(--bg); margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+:root { --p: #2563eb; --bg: #f1f5f9; --text: #1e293b; }
+body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
 
-/* 登录卡片样式 */
-.auth-card {
+.container { max-width: 800px; margin: 0 auto; padding: 15px; }
+
+/* 输入组网格调整：标签移到链接右边 */
+.input-group-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 10px;
     background: white;
-    width: 90%;
-    max-width: 400px;
-    margin: 100px auto;
-    padding: 30px;
+    padding: 15px;
     border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
-.auth-header h2 { margin: 0; color: #1e293b; }
-.auth-header p { color: #64748b; font-size: 14px; margin: 10px 0 20px; }
-.auth-body input {
-    width: 100%;
-    padding: 12px;
-    box-sizing: border-box;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 16px;
+.input-group-grid input { padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; }
+.input-group-grid button { grid-column: span 2; }
+
+/* 文件名作为链接的样式 */
+.file-title-link {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 4px;
+    transition: color 0.2s;
 }
+.file-title-link:hover { color: var(--p); text-decoration: underline; }
 
-/* 容器布局 */
-.container { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+/* 文件卡片 */
+.file-card { background: white; margin-bottom: 12px; padding: 16px; border-radius: 12px; list-style: none; }
+.file-main { display: flex; justify-content: space-between; align-items: flex-start; }
 
-/* 搜索和工具 */
-.header-tools { display: flex; gap: 10px; align-items: center; }
+/* 行内编辑模式样式 */
+.edit-mode { display: flex; flex-direction: column; gap: 10px; }
+.edit-mode input { padding: 8px; border: 1px solid var(--p); border-radius: 4px; }
+.edit-actions { display: flex; gap: 10px; }
+.btn-save { background: var(--p); color: white; border: none; padding: 5px 15px; border-radius: 4px; }
+.btn-cancel { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 5px 15px; border-radius: 4px; }
 
-/* 其他列表和按钮样式保持之前版本一致... */
-.input-group { display: flex; gap: 10px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-.btn-primary { background: var(--p); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: 500; }
-li { background: white; margin-bottom: 10px; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.actions { display: flex; gap: 5px; }
-.btn-sm { padding: 4px 8px; font-size: 12px; cursor: pointer; border: 1px solid #ddd; border-radius: 4px; background: #fff; text-decoration: none; color: #333; }
-.btn-view { color: var(--p); border-color: #bfdbfe; background: #eff6ff; }
-.btn-del { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
-.toast { position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 25px; border-radius: 20px; transition: 0.3s; opacity: 0; z-index: 9999; }
-.toast.show { bottom: 30px; opacity: 1; }
+/* 标签与操作 */
+.tag-container { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { background: #e2e8f0; font-size: 11px; padding: 2px 8px; border-radius: 4px; cursor: pointer; }
+.actions { display: flex; gap: 8px; margin-top: 12px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+.btn-action { font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; cursor: pointer; }
+.btn-del { color: #ef4444; border-color: #fee2e2; }
+
+/* 底部垂直居中 Toast */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(30, 41, 59, 0.9);
+    color: white;
+    padding: 10px 25px;
+    border-radius: 50px;
+    font-size: 14px;
+    transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s;
+    opacity: 0;
+    z-index: 9999;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* 登录卡片 */
+.auth-card { background: white; width: 300px; margin: 100px auto; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+.btn-primary { background: var(--p); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; }
