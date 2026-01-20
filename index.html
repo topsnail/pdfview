@@ -29,8 +29,14 @@
                     <input type="text" id="fileTags" placeholder="标签 (英文逗号分隔)">
                 </div>
                 <div class="row">
-                    <input type="text" id="fileUrl" placeholder="PDF 链接 (https://...)">
-                    <button id="addBtn" onclick="addFile()" class="btn-primary">添加文件</button>
+                    <input type="file" id="fileUpload" accept=".pdf" placeholder="选择PDF文件">
+                    <button id="addBtn" onclick="uploadFile()" class="btn-primary">上传文件</button>
+                </div>
+                <div class="row" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar" style="width: 100%; background: #f1f1f1; border-radius: 4px; height: 8px;">
+                        <div id="progressFill" style="width: 0%; background: #3b82f6; border-radius: 4px; height: 100%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <span id="progressText" style="font-size: 12px; color: #64748b; margin-top: 4px;">上传进度: 0%</span>
                 </div>
             </div>
         </section>

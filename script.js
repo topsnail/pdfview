@@ -1,3 +1,12 @@
+// R2存储桶配置
+const R2_CONFIG = {
+    bucketName: 'pdf-storage',
+    accountId: '3dda08e3f72e78a125d2e5c79f236eb9',
+    accessKey: '62d256a47d38ef5ee51653b3d3c20736',
+    secretKey: '0d7ff7af7af34793f23d15cde1867fbdab8176ec881cac6030c0a9c1889de0a3',
+    endpoint: 'https://3dda08e3f72e78a125d2e5c79f236eb9.r2.cloudflarestorage.com'
+};
+
 const API_URL = '/api/files';
 let files = [];
 let accessPassword = localStorage.getItem('pdf_access_token');
@@ -29,28 +38,80 @@ async function apiFetch(url, options = {}) {
     return res;
 }
 
-async function addFile() {
+async function uploadFile() {
     const name = document.getElementById('fileName').value;
-    const url = document.getElementById('fileUrl').value;
+    const fileInput = document.getElementById('fileUpload');
     const tags = document.getElementById('fileTags').value;
     const btn = document.getElementById('addBtn');
-    if (!name || !url) return showToast("请完整填写");
+    const progressContainer = document.getElementById('uploadProgress');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    
+    if (!name || !fileInput.files.length) return showToast("请填写文件名称并选择文件");
 
     btn.disabled = true;
-    const fileData = {
-        id: Date.now().toString(),
-        name, url,
-        tags: tags ? tags.split(',').map(t => t.trim()) : [],
-        date: new Date().toLocaleDateString()
-    };
+    progressContainer.style.display = 'block';
+    
+    const file = fileInput.files[0];
+    if (file.type !== 'application/pdf') return showToast("请上传PDF文件");
+    if (file.size > 10 * 1024 * 1024) return showToast("文件大小不能超过10MB");
 
-    const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(fileData) });
-    if (res && res.ok) {
-        showToast("保存成功");
-        ["fileName", "fileUrl", "fileTags"].forEach(id => document.getElementById(id).value = '');
-        loadFiles();
+    try {
+        // 生成唯一文件名
+        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const fileUrl = await uploadToR2(file, fileName, (progress) => {
+            const percent = Math.round((progress.loaded / progress.total) * 100);
+            progressFill.style.width = `${percent}%`;
+            progressText.textContent = `上传进度: ${percent}%`;
+        });
+
+        const fileData = {
+            id: Date.now().toString(),
+            name,
+            url: fileUrl,
+            tags: tags ? tags.split(',').map(t => t.trim()) : [],
+            date: new Date().toLocaleDateString()
+        };
+
+        const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(fileData) });
+        if (res && res.ok) {
+            showToast("上传成功");
+            ["fileName", "fileTags"].forEach(id => document.getElementById(id).value = '');
+            fileInput.value = '';
+            progressContainer.style.display = 'none';
+            progressFill.style.width = '0%';
+            loadFiles();
+        }
+    } catch (error) {
+        console.error('上传失败:', error);
+        showToast("上传失败，请重试");
+        progressContainer.style.display = 'none';
+    } finally {
+        btn.disabled = false;
     }
-    btn.disabled = false;
+}
+
+async function uploadToR2(file, fileName, onProgress) {
+    const formData = new FormData();
+    formData.append('file', file, fileName);
+    
+    // 这里需要根据实际的R2上传API进行修改
+    // 以下是一个示例实现，实际需要根据R2的API文档进行调整
+    const response = await fetch(`${R2_CONFIG.endpoint}/${R2_CONFIG.bucketName}/${fileName}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/pdf',
+            'Authorization': `Bearer ${R2_CONFIG.accessKey}`
+        },
+        body: file,
+        onUploadProgress: onProgress
+    });
+    
+    if (!response.ok) {
+        throw new Error('上传失败');
+    }
+    
+    return `${R2_CONFIG.endpoint}/${R2_CONFIG.bucketName}/${fileName}`;
 }
 
 function renderFileList() {
