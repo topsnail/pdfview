@@ -104,6 +104,45 @@
             font-size: 16px;
         }
         
+        /* 加载进度条 */
+        .progress-container {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            height: 8px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: #b2efa6;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+        }
+        
+        /* 懒加载相关 */
+        .page-container {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .page-container.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
         @media (max-width: 768px) {
             .toolbar {
                 height: 36px;
@@ -137,12 +176,16 @@
     </div>
     <div id="viewerContainer">
         <div id="status" class="loading">正在准备渲染引擎...</div>
+        <div id="progress-container" class="progress-container" style="display: none;">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <div id="progress-text" class="progress-text" style="display: none;">加载中... 0%</div>
     </div>
 
-    <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         const params = new URLSearchParams(location.search);
         const fileUrl = params.get('file');
@@ -158,57 +201,82 @@
         async function renderPDF() {
             const container = document.getElementById('viewerContainer');
             const status = document.getElementById('status');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
             
             try {
+                // 显示进度条
+                status.textContent = '正在加载PDF文件...';
+                progressContainer.style.display = 'block';
+                progressText.style.display = 'block';
+                
                 // 使用跨域代理或直接加载
                 const loadingTask = pdfjsLib.getDocument({
                     url: fileUrl,
-                    cMapUrl: `https://unpkg.com/pdfjs-dist@${PDF_JS_VERSION}/cmaps/`,
+                    cMapUrl: `https://cdn.bootcdn.net/ajax/libs/pdf.js/${PDF_JS_VERSION}/cmaps/`,
                     cMapPacked: true,
-                    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${PDF_JS_VERSION}/standard_fonts/`,
+                    standardFontDataUrl: `https://cdn.bootcdn.net/ajax/libs/pdf.js/${PDF_JS_VERSION}/standard_fonts/`,
                     disableFontFace: false,
                     enableXfa: true,
                     renderInteractiveForms: true,
                     enableScripting: true,
                     textLayerMode: 1,
+                    // 添加进度回调
+                    progressCallback: ({ loaded, total }) => {
+                        if (total > 0) {
+                            const progress = Math.round((loaded / total) * 100);
+                            progressBar.style.width = `${progress}%`;
+                            progressText.textContent = `加载中... ${progress}%`;
+                        }
+                    }
                 });
 
                 const pdf = await loadingTask.promise;
                 status.remove();
+                progressContainer.style.display = 'none';
+                progressText.style.display = 'none';
                 document.getElementById('title').textContent = 'PDF 预览';
                 document.getElementById('pageInfo').textContent = `1 / ${pdf.numPages}`;
 
                 // 根据屏幕宽度调整缩放比例，避免拉伸
                 const containerWidth = Math.min(window.innerWidth - 40, 900);
                 
+                // 创建页面元素但不立即渲染
+                const pageElements = [];
+                
                 for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const originalViewport = page.getViewport({ scale: 1 });
-                    const scale = containerWidth / originalViewport.width;
-                    const viewport = page.getViewport({ scale: scale });
-                    
                     const pageDiv = document.createElement('div');
                     pageDiv.className = 'page-container';
                     pageDiv.dataset.page = i;
                     const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    
-                    // 提高清晰度
-                    const deviceScaleFactor = window.devicePixelRatio || 1;
-                    canvas.height = viewport.height * deviceScaleFactor;
-                    canvas.width = viewport.width * deviceScaleFactor;
-                    canvas.style.height = viewport.height + 'px';
-                    canvas.style.width = viewport.width + 'px';
-                    context.scale(deviceScaleFactor, deviceScaleFactor);
-
                     pageDiv.appendChild(canvas);
                     container.appendChild(pageDiv);
-
-                    await page.render({ 
-                        canvasContext: context, 
-                        viewport: viewport,
-                        enhanceTextSelection: true
-                    }).promise;
+                    pageElements.push({ pageNum: i, element: pageDiv, canvas: canvas });
+                }
+                
+                // 实现懒加载
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(async (entry) => {
+                        if (entry.isIntersecting) {
+                            const pageElement = pageElements.find(el => el.element === entry.target);
+                            if (pageElement && !pageElement.loaded) {
+                                observer.unobserve(entry.target);
+                                await renderPage(pdf, pageElement, containerWidth);
+                            }
+                        }
+                    });
+                }, {
+                    rootMargin: '200px 0px', // 提前200px开始加载
+                    threshold: 0.1
+                });
+                
+                // 观察所有页面元素
+                pageElements.forEach(el => observer.observe(el.element));
+                
+                // 立即渲染第一页
+                if (pageElements.length > 0) {
+                    await renderPage(pdf, pageElements[0], containerWidth);
                 }
 
                 // 添加滚动监听，更新当前页码
@@ -217,7 +285,42 @@
             } catch (e) {
                 status.textContent = '加载失败: ' + e.message;
                 status.className = 'error';
+                progressContainer.style.display = 'none';
+                progressText.style.display = 'none';
                 console.error(e);
+            }
+        }
+        
+        async function renderPage(pdf, pageElement, containerWidth) {
+            try {
+                const { pageNum, element, canvas } = pageElement;
+                const page = await pdf.getPage(pageNum);
+                const originalViewport = page.getViewport({ scale: 1 });
+                const scale = containerWidth / originalViewport.width;
+                const viewport = page.getViewport({ scale: scale });
+                
+                const context = canvas.getContext('2d');
+                
+                // 提高清晰度
+                const deviceScaleFactor = window.devicePixelRatio || 1;
+                canvas.height = viewport.height * deviceScaleFactor;
+                canvas.width = viewport.width * deviceScaleFactor;
+                canvas.style.height = viewport.height + 'px';
+                canvas.style.width = viewport.width + 'px';
+                context.scale(deviceScaleFactor, deviceScaleFactor);
+
+                await page.render({ 
+                    canvasContext: context, 
+                    viewport: viewport,
+                    enhanceTextSelection: true
+                }).promise;
+                
+                // 标记为已加载
+                pageElement.loaded = true;
+                // 添加加载动画
+                element.classList.add('loaded');
+            } catch (e) {
+                console.error('渲染页面失败:', e);
             }
         }
 

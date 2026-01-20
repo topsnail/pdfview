@@ -54,6 +54,14 @@ async function loadFiles() {
     renderList(data);
 }
 
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 function renderList(data) {
     const list = document.getElementById('fileList');
     list.innerHTML = data.map(file => `
@@ -61,7 +69,7 @@ function renderList(data) {
             <input type="checkbox" onchange="toggleSelect('${file.id}')" ${selectedIds.has(file.id) ? 'checked' : ''}>
             <div class="file-info">
                 <a href="viewer.html?file=${encodeURIComponent(file.url)}" target="_blank" class="file-title">${file.name}</a>
-                <div style="font-size:11px; color:#94a3b8">📅 ${file.date} | 🏷️ ${file.tags.map(tag => `<span class="tag-item" onclick="searchByTag('${tag}')" style="cursor: pointer; color: var(--primary); text-decoration: underline; margin-right: 4px;">${tag}</span>`).join(', ')}</div>
+                <div style="font-size:11px; color:#94a3b8">📅 ${file.date} | 📦 ${file.size ? formatFileSize(file.size) : '未知大小'} | 🏷️ ${file.tags.map(tag => `<span class="tag-item" onclick="searchByTag('${tag}')" style="cursor: pointer; color: var(--primary); text-decoration: underline; margin-right: 4px;">${tag}</span>`).join(', ')}</div>
             </div>
             ${currentTab === 'library' 
                 ? `<button onclick="deleteSingle('${file.id}')" class="btn-icon"><i class="fas fa-trash"></i></button>`

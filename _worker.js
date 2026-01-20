@@ -65,12 +65,15 @@ export default {
           const id = Date.now().toString();
           // 写入 R2
           await bucket.put(id, file);
+          // 获取文件大小
+          const fileSize = file.size || 0;
           const fileData = {
             id: id,
             name: formData.get('name'),
             url: `/api/raw?id=${id}`,
             tags: formData.get('tags') ? formData.get('tags').split(',').map(t => t.trim()) : [],
             date: new Date().toLocaleDateString(),
+            size: fileSize,
             isDeleted: false
           };
           list.push(fileData);
