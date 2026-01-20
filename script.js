@@ -86,7 +86,15 @@ function formatFileSize(bytes) {
 
 function generateShareLink(fileId) {
     const baseUrl = window.location.origin;
-    const shareLink = `${baseUrl}/viewer.html?file=/api/raw?id=${fileId}`;
+    // 修复：对文件ID进行URL编码
+    const encodedFileId = encodeURIComponent(fileId);
+    const shareLink = `${baseUrl}/viewer.html?file=/api/raw?id=${encodedFileId}`;
+    
+    // 添加调试信息
+    console.log('原始文件ID:', fileId);
+    console.log('编码后文件ID:', encodedFileId);
+    console.log('分享链接:', shareLink);
+    
     navigator.clipboard.writeText(shareLink).then(() => {
         showToast("分享链接已复制到剪贴板", "success");
     }).catch(err => {
@@ -101,7 +109,7 @@ function renderList(data) {
         <li class="file-card">
             <input type="checkbox" onchange="toggleSelect('${file.id}')" ${selectedIds.has(file.id) ? 'checked' : ''}>
             <div class="file-info">
-                <a href="viewer.html?file=${encodeURIComponent(file.url)}" target="_blank" class="file-title">${file.name}</a>
+                <a href="viewer.html?file=${encodeURIComponent('/api/raw?id=' + file.id)}" target="_blank" class="file-title">${file.name}</a>
                 <div style="font-size:11px; color:#94a3b8">📅 ${file.date} | 📦 ${file.size ? formatFileSize(file.size) : '未知大小'} | 🏷️ ${file.tags.map(tag => `<span class="tag-item" onclick="searchByTag('${tag}')" style="cursor: pointer; color: var(--primary); text-decoration: underline; margin-right: 4px;">${tag}</span>`).join(', ')}</div>
             </div>
             <div class="file-actions">
@@ -199,10 +207,15 @@ async function batchDelete() {
     );
 }
 
-function switchTab(t) { currentTab = t; selectedIds.clear(); toggleSelect(); loadFiles(); 
+function switchTab(t) { 
+    currentTab = t; 
+    selectedIds.clear(); 
+    toggleSelect(); 
+    loadFiles(); 
     document.getElementById('tab-library').className = t === 'library' ? 'active' : '';
     document.getElementById('tab-trash').className = t === 'trash' ? 'active' : '';
 }
+
 function handleLogin() {
     const password = document.getElementById('pw-input').value;
     if (!password) return showToast("请输入密码", "error");
@@ -283,5 +296,9 @@ function renderFileList() {
     loadFiles();
 }
 
-function logout() { localStorage.removeItem('pdf_access_token'); location.reload(); }
+function logout() { 
+    localStorage.removeItem('pdf_access_token'); 
+    location.reload(); 
+}
+
 init();
