@@ -9,57 +9,57 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="login-container" class="auth-card" style="display: none;">
+    <div id="login-container" class="auth-card" style="display: none;" aria-label="登录">
         <h2>🔐 身份验证</h2>
-        <input type="password" id="pw-input" placeholder="输入管理密码..." onkeyup="if(event.keyCode===13) handleLogin()">
-        <button onclick="handleLogin()" class="btn-primary" style="width:100%">解锁</button>
+        <input type="password" id="pw-input" placeholder="输入管理密码..." onkeyup="if(event.keyCode===13) handleLogin()" aria-label="密码输入">
+        <button onclick="handleLogin()" class="btn-primary" style="width:100%" aria-label="解锁">解锁</button>
     </div>
 
     <div id="main-content" class="container" style="display: none;">
         <header class="main-header">
             <div class="logo-area">
                 <h1>📄 PDF Archive</h1>
-                <div class="nav-tabs">
-                    <button onclick="switchTab('library')" id="tab-library" class="active">库</button>
-                    <button onclick="switchTab('trash')" id="tab-trash">回收站</button>
+                <div class="nav-tabs" aria-label="导航标签">
+                    <button onclick="switchTab('library')" id="tab-library" class="active" aria-label="库">库</button>
+                    <button onclick="switchTab('trash')" id="tab-trash" aria-label="回收站">回收站</button>
                 </div>
             </div>
-            <button onclick="logout()" class="btn-logout">退出</button>
+            <button onclick="logout()" class="btn-logout" aria-label="退出">退出</button>
         </header>
 
         <section class="upload-card">
             <div class="input-row">
-                <input type="text" id="fileName" placeholder="输入显示标题">
-                <input type="text" id="fileTags" placeholder="标签(逗号分隔)">
+                <input type="text" id="fileName" placeholder="输入显示标题" aria-label="文件名">
+                <input type="text" id="fileTags" placeholder="标签(逗号分隔)" aria-label="标签">
             </div>
             <div class="file-action-row">
-                <label for="fileInput" class="custom-file-upload">
+                <label for="fileInput" class="custom-file-upload" aria-label="选择PDF文件">
                     <i class="fas fa-cloud-upload-alt"></i> <span id="file-label">选择 PDF 文件</span>
                 </label>
-                <input type="file" id="fileInput" accept=".pdf" onchange="onFileSelected()">
-                <button id="addBtn" onclick="uploadFile()" class="btn-primary">开始上传</button>
+                <input type="file" id="fileInput" accept=".pdf" onchange="onFileSelected()" aria-label="文件选择">
+                <button id="addBtn" onclick="uploadFile()" class="btn-primary" aria-label="开始上传">开始上传</button>
             </div>
-            <div id="progress-wrap" class="progress-wrap" style="display:none;">
-                <div id="progress-bar" class="progress-bar"></div>
+            <div id="progress-wrap" class="progress-wrap" style="display:none;" aria-label="上传进度">
+                <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                 <span id="progress-val">0%</span>
             </div>
         </section>
 
-        <div class="search-container">
+        <div class="search-container" aria-label="搜索">
             <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="搜索文件名或 #标签..." oninput="renderFileList()">
+            <input type="text" id="searchInput" placeholder="搜索文件名或 #标签..." oninput="renderFileList()" aria-label="搜索输入">
         </div>
 
-        <ul id="fileList" class="file-list-v"></ul>
+        <ul id="fileList" class="file-list-v" aria-label="文件列表"></ul>
 
-        <div id="batch-bar" class="batch-bar" style="display:none;">
+        <div id="batch-bar" class="batch-bar" style="display:none;" aria-label="批量操作栏">
             <div class="batch-bar-left">
                 <span id="batch-count">已选 0 项</span>
-                <button onclick="selectAllFiles()" class="select-all-btn">全选</button>
+                <button onclick="selectAllFiles()" class="select-all-btn" aria-label="全选文件">全选</button>
             </div>
             <div class="batch-btns">
-                <button onclick="batchDelete()" class="btn-del-sec">删除</button>
-                <button onclick="cancelBatch()" class="btn-link">取消</button>
+                <button onclick="batchDelete()" class="btn-del-sec" aria-label="批量删除">删除</button>
+                <button onclick="cancelBatch()" class="btn-link" aria-label="取消批量操作">取消</button>
             </div>
         </div>
     </div>

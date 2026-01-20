@@ -659,6 +659,7 @@ input[type="file"] {
         flex: 1;
         text-align: center;
         padding: 8px 12px;
+        white-space: nowrap;
     }
 
     .input-row {
@@ -673,10 +674,12 @@ input[type="file"] {
 
     .custom-file-upload {
         order: 1;
+        white-space: nowrap;
     }
 
     #addBtn {
         order: 2;
+        white-space: nowrap;
     }
 
     .file-card {
@@ -689,12 +692,19 @@ input[type="file"] {
         width: 100%;
     }
 
+    .file-info div {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     .file-card input[type="checkbox"] {
         align-self: flex-start;
     }
 
     .file-card button {
         align-self: flex-start;
+        white-space: nowrap;
     }
 
     .batch-bar {
@@ -703,8 +713,34 @@ input[type="file"] {
         gap: 12px;
     }
 
+    .batch-bar-left {
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
     .batch-btns {
         justify-content: center;
+        white-space: nowrap;
+    }
+
+    .batch-btns button {
+        white-space: nowrap;
+    }
+
+    .search-container input {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .upload-card {
+        white-space: nowrap;
+    }
+
+    .input-row input {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 
