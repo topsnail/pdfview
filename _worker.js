@@ -65,8 +65,19 @@ export default {
           const id = Date.now().toString();
           // 写入 R2
           await bucket.put(id, file);
-          // 获取文件大小
-          const fileSize = file.size || 0;
+          // 获取文件大小 - 处理不同类型的文件对象
+          let fileSize = 0;
+          try {
+            if (file.size) {
+              fileSize = file.size;
+            } else if (file.byteLength) {
+              fileSize = file.byteLength;
+            } else if (typeof file === 'string') {
+              fileSize = new Blob([file]).size;
+            }
+          } catch (e) {
+            console.error('获取文件大小失败:', e);
+          }
           const fileData = {
             id: id,
             name: formData.get('name'),
