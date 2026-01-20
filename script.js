@@ -104,12 +104,14 @@ function renderList(data) {
                 <a href="viewer.html?file=${encodeURIComponent(file.url)}" target="_blank" class="file-title">${file.name}</a>
                 <div style="font-size:11px; color:#94a3b8">📅 ${file.date} | 📦 ${file.size ? formatFileSize(file.size) : '未知大小'} | 🏷️ ${file.tags.map(tag => `<span class="tag-item" onclick="searchByTag('${tag}')" style="cursor: pointer; color: var(--primary); text-decoration: underline; margin-right: 4px;">${tag}</span>`).join(', ')}</div>
             </div>
-            ${currentTab === 'library' 
-                ? `
-                    <button onclick="generateShareLink('${file.id}')" class="btn-icon"><i class="fas fa-share-alt"></i></button>
-                    <button onclick="deleteSingle('${file.id}')" class="btn-icon"><i class="fas fa-trash"></i></button>
-                  `
-                : `<button onclick="restoreSingle('${file.id}')" class="btn-icon"><i class="fas fa-undo"></i></button>`}
+            <div class="file-actions">
+                ${currentTab === 'library' 
+                    ? `
+                        <button onclick="generateShareLink('${file.id}')" class="btn-icon"><i class="fas fa-share-alt"></i></button>
+                        <button onclick="deleteSingle('${file.id}')" class="btn-icon"><i class="fas fa-trash"></i></button>
+                      `
+                    : `<button onclick="restoreSingle('${file.id}')" class="btn-icon"><i class="fas fa-undo"></i></button>`}
+            </div>
         </li>
     `).join('');
 }
@@ -252,6 +254,31 @@ async function restoreSingle(id) {
 function cancelBatch() {
     selectedIds.clear();
     toggleSelect();
+    document.getElementById('select-all-checkbox').checked = false;
+}
+
+function toggleSelectAll() {
+    const checkbox = document.getElementById('select-all-checkbox');
+    const isChecked = checkbox.checked;
+    
+    // 获取当前页面的所有文件ID
+    const fileCards = document.querySelectorAll('.file-card');
+    fileCards.forEach(card => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            const id = checkbox.getAttribute('onchange').match(/toggleSelect\('(.*)'\)/)[1];
+            if (isChecked) {
+                selectedIds.add(id);
+                checkbox.checked = true;
+            } else {
+                selectedIds.delete(id);
+                checkbox.checked = false;
+            }
+        }
+    });
+    
+    document.getElementById('batch-bar').style.display = selectedIds.size > 0 ? 'flex' : 'none';
+    document.getElementById('batch-count').textContent = `已选 ${selectedIds.size} 项`;
 }
 
 function renderFileList() {

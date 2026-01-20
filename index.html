@@ -55,7 +55,10 @@
         <div id="batch-bar" class="batch-bar" style="display:none;" aria-label="批量操作栏">
             <div class="batch-bar-left">
                 <span id="batch-count">已选 0 项</span>
-                <button onclick="selectAllFiles()" class="select-all-btn" aria-label="全选文件">全选</button>
+                <label class="select-all-label">
+                    <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll()" aria-label="全选文件">
+                    <span>全选</span>
+                </label>
             </div>
             <div class="batch-btns">
                 <button onclick="batchDelete()" class="btn-del-sec" aria-label="批量删除">删除</button>
