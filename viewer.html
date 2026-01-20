@@ -171,13 +171,15 @@
                 const pdf = await loadingTask.promise;
                 status.remove();
                 document.getElementById('title').textContent = 'PDF 预览';
-                document.getElementById('pageInfo').textContent = `共 ${pdf.numPages} 页`;
+                document.getElementById('pageInfo').textContent = `1 / ${pdf.numPages}`;
 
-                // 根据屏幕宽度和DPI调整缩放比例
-                const scale = window.devicePixelRatio > 1 ? 2.0 : 1.8;
-
+                // 根据屏幕宽度调整缩放比例，避免拉伸
+                const containerWidth = Math.min(window.innerWidth - 40, 900);
+                
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
+                    const originalViewport = page.getViewport({ scale: 1 });
+                    const scale = containerWidth / originalViewport.width;
                     const viewport = page.getViewport({ scale: scale });
                     
                     const pageDiv = document.createElement('div');
