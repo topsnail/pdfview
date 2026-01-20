@@ -182,10 +182,10 @@
         <div id="progress-text" class="progress-text" style="display: none;">加载中... 0%</div>
     </div>
 
-    <script src="https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         const params = new URLSearchParams(location.search);
         const fileUrl = params.get('file');
@@ -228,9 +228,9 @@
                 // 使用跨域代理或直接加载 - 启用流式加载
                 const loadingTask = pdfjsLib.getDocument({
                     url: fileUrl,
-                    cMapUrl: `https://cdn.bootcdn.net/ajax/libs/pdf.js/${PDF_JS_VERSION}/cmaps/`,
+                    cMapUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDF_JS_VERSION}/cmaps/`,
                     cMapPacked: true,
-                    standardFontDataUrl: `https://cdn.bootcdn.net/ajax/libs/pdf.js/${PDF_JS_VERSION}/standard_fonts/`,
+                    standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDF_JS_VERSION}/standard_fonts/`,
                     disableFontFace: false,
                     enableXfa: true,
                     renderInteractiveForms: true,
