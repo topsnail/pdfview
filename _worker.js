@@ -35,7 +35,18 @@ export default {
         const search = url.searchParams.get('q') || '';
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
         let filtered = list.filter(f => (tab === 'trash' ? f.isDeleted : !f.isDeleted));
-        if (search) filtered = filtered.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+        
+        if (search) {
+          // 检查是否为标签搜索 (#标签)
+          if (search.startsWith('#')) {
+            const tag = search.substring(1).toLowerCase();
+            filtered = filtered.filter(f => f.tags.some(t => t.toLowerCase().includes(tag)));
+          } else {
+            // 普通搜索：搜索文件名
+            filtered = filtered.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+          }
+        }
+        
         filtered.sort((a, b) => b.id - a.id);
         return new Response(JSON.stringify(filtered), { headers });
       }

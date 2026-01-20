@@ -72,7 +72,7 @@ function renderList(data) {
 
 function searchByTag(tag) {
     const searchInput = document.getElementById('searchInput');
-    searchInput.value = tag;
+    searchInput.value = `#${tag}`;
     loadFiles();
     showToast(`搜索标签: ${tag}`, "success");
 }
