@@ -34,11 +34,11 @@ body {
 /* 身份验证卡片 */
 .auth-card {
     background: var(--card);
-    padding: 40px;
+    padding: 32px;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
-    max-width: 400px;
-    margin: 100px auto;
+    max-width: 360px;
+    margin: 80px auto;
     text-align: center;
     transition: var(--transition);
 }
@@ -49,10 +49,29 @@ body {
 }
 
 .auth-card h2 {
-    margin-bottom: 24px;
-    font-size: 1.5rem;
+    margin-bottom: 20px;
+    font-size: 1.375rem;
     font-weight: 700;
     color: var(--text);
+}
+
+.auth-card input[type="password"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: var(--transition);
+    margin-bottom: 16px;
+    background: #f8fafc;
+}
+
+.auth-card input[type="password"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    background: var(--card);
 }
 
 /* 头部协调布局 */
@@ -134,10 +153,10 @@ body {
 /* 上传卡片 */
 .upload-card {
     background: var(--card);
-    padding: 28px;
+    padding: 20px;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-md);
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     transition: var(--transition);
     border: 1px solid var(--border);
 }
@@ -150,12 +169,12 @@ body {
 .input-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 20px;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
 .input-row input {
-    padding: 12px 16px;
+    padding: 10px 14px;
     border: 2px solid var(--border);
     border-radius: var(--radius-md);
     font-size: 0.875rem;
@@ -178,14 +197,14 @@ body {
 .file-action-row {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
 .custom-file-upload {
     flex: 1;
     border: 2px dashed var(--border);
-    padding: 16px;
+    padding: 10px;
     border-radius: var(--radius-md);
     text-align: center;
     cursor: pointer;
@@ -193,9 +212,13 @@ body {
     transition: var(--transition);
     background: #f8fafc;
     font-weight: 500;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     position: relative;
     overflow: hidden;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .custom-file-upload::before {
@@ -317,12 +340,12 @@ input[type="file"] {
 
 .file-card {
     background: var(--card);
-    padding: 20px;
+    padding: 16px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     transition: var(--transition);
     position: relative;
     overflow: hidden;

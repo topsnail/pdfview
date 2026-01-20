@@ -61,13 +61,20 @@ function renderList(data) {
             <input type="checkbox" onchange="toggleSelect('${file.id}')" ${selectedIds.has(file.id) ? 'checked' : ''}>
             <div class="file-info">
                 <a href="viewer.html?file=${encodeURIComponent(file.url)}" target="_blank" class="file-title">${file.name}</a>
-                <div style="font-size:11px; color:#94a3b8">📅 ${file.date} | 🏷️ ${file.tags.join(', ')}</div>
+                <div style="font-size:11px; color:#94a3b8">📅 ${file.date} | 🏷️ ${file.tags.map(tag => `<span class="tag-item" onclick="searchByTag('${tag}')" style="cursor: pointer; color: var(--primary); text-decoration: underline; margin-right: 4px;">${tag}</span>`).join(', ')}</div>
             </div>
             ${currentTab === 'library' 
                 ? `<button onclick="deleteSingle('${file.id}')" class="btn-icon"><i class="fas fa-trash"></i></button>`
                 : `<button onclick="restoreSingle('${file.id}')" class="btn-icon"><i class="fas fa-undo"></i></button>`}
         </li>
     `).join('');
+}
+
+function searchByTag(tag) {
+    const searchInput = document.getElementById('searchInput');
+    searchInput.value = tag;
+    loadFiles();
+    showToast(`搜索标签: ${tag}`, "success");
 }
 
 // 缩短后的 Toast
@@ -89,7 +96,10 @@ function onFileSelected() {
 }
 
 function toggleSelect(id) {
-    selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id);
+    // 只有当id存在时才操作集合
+    if (id !== undefined) {
+        selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id);
+    }
     document.getElementById('batch-bar').style.display = selectedIds.size > 0 ? 'flex' : 'none';
     document.getElementById('batch-count').textContent = `已选 ${selectedIds.size} 项`;
 }
