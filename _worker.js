@@ -13,7 +13,7 @@ export default {
 
     if (request.method === "OPTIONS") return new Response(null, { headers });
 
-    // --- 1. CDN 缓存优化 ---
+    // --- 1. 公开预览接口 (带 CDN 缓存) ---
     if (url.pathname === '/api/raw') {
       const id = url.searchParams.get('id');
       const file = await bucket.get(id);
@@ -22,39 +22,45 @@ export default {
       const resHeaders = new Headers(headers);
       file.writeHttpMetadata(resHeaders);
       resHeaders.set('Content-Type', 'application/pdf');
-      // 设置缓存：浏览器缓存 1 小时，CDN 缓存 24 小时
-      resHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+      resHeaders.set('Cache-Control', 'public, max-age=3600'); // 浏览器缓存1小时
       return new Response(file.body, { headers: resHeaders });
     }
 
-    const isAuth = request.headers.get('Authorization') === password;
-    if (!isAuth) return new Response('Unauthorized', { status: 401, headers });
-
+    // --- 2. API 接口 (需要校验密码) ---
     if (url.pathname.startsWith('/api/files')) {
-      // --- 2. 获取列表（支持分页与回收站过滤） ---
+      const isAuth = request.headers.get('Authorization') === password;
+      if (!isAuth) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+          status: 401, headers: { ...headers, 'Content-Type': 'application/json' } 
+        });
+      }
+
+      // 获取列表 (支持分页和回收站)
       if (request.method === 'GET') {
-        const showDeleted = url.searchParams.get('tab') === 'trash';
+        const tab = url.searchParams.get('tab') || 'library';
         const page = parseInt(url.searchParams.get('page') || '1');
         const limit = parseInt(url.searchParams.get('limit') || '10');
-        
+        const search = url.searchParams.get('q') || '';
+
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
         
-        // 过滤回收站状态
-        let filtered = list.filter(f => showDeleted ? f.isDeleted : !f.isDeleted);
-        filtered.sort((a, b) => b.id - a.id); // 按时间倒序
+        // 过滤状态和搜索
+        let filtered = list.filter(f => (tab === 'trash' ? f.isDeleted : !f.isDeleted));
+        if (search) {
+          filtered = filtered.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+        }
+        filtered.sort((a, b) => b.id - a.id);
 
         const total = filtered.length;
         const data = filtered.slice((page - 1) * limit, page * limit);
 
-        return new Response(JSON.stringify({ data, total, page, limit }), { 
-          headers: { ...headers, 'Content-Type': 'application/json' } 
-        });
+        return new Response(JSON.stringify({ data, total }), { headers });
       }
 
-      // --- 3. 上传与恢复 (POST) ---
+      // 上传与恢复 (POST)
       if (request.method === 'POST') {
         const formData = await request.formData();
-        const action = formData.get('action'); // 'restore' or 'upload'
+        const action = formData.get('action');
         const id = formData.get('id');
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
 
@@ -65,49 +71,41 @@ export default {
           const name = formData.get('name');
           const tags = formData.get('tags');
           const newId = id || Date.now().toString();
-
           if (file && typeof file !== 'string') await bucket.put(newId, file);
 
           const fileData = {
-            id: newId,
-            name,
+            id: newId, name,
             url: `/api/raw?id=${newId}`,
             tags: tags ? tags.split(',').map(t => t.trim()) : [],
             date: new Date().toLocaleDateString(),
             isDeleted: false
           };
-
           const idx = list.findIndex(f => f.id === newId);
-          if (idx > -1) list[idx] = { ...list[idx], ...fileData };
-          else list.push(fileData);
+          if (idx > -1) list[idx] = { ...list[idx], ...fileData }; else list.push(fileData);
         }
-
         await kv.put('FILE_LIST', JSON.stringify(list));
         return new Response('OK', { headers });
       }
 
-      // --- 4. 逻辑删除与彻底删除 (DELETE) ---
+      // 批量删除 (DELETE)
       if (request.method === 'DELETE') {
         const id = url.searchParams.get('id');
-        const ids = id ? [id] : JSON.parse(await request.text()); // 支持批量
+        const ids = id ? [id] : JSON.parse(await request.text());
         const permanent = url.searchParams.get('purge') === 'true';
 
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
-
         if (permanent) {
-          // 彻底删除：从 R2 和 KV 同时移除
           for (const targetId of ids) { await bucket.delete(targetId); }
           list = list.filter(f => !ids.includes(f.id));
         } else {
-          // 进入回收站：仅标记
           list = list.map(f => ids.includes(f.id) ? { ...f, isDeleted: true } : f);
         }
-
         await kv.put('FILE_LIST', JSON.stringify(list));
         return new Response('OK', { headers });
       }
     }
 
+    // --- 3. 静态资源托管 (不校验密码，允许显示网页) ---
     return env.ASSETS.fetch(request);
   }
 };
