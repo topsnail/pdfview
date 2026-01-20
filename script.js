@@ -109,5 +109,51 @@ function switchTab(t) { currentTab = t; selectedIds.clear(); toggleSelect(); loa
     document.getElementById('tab-library').className = t === 'library' ? 'active' : '';
     document.getElementById('tab-trash').className = t === 'trash' ? 'active' : '';
 }
+function handleLogin() {
+    const password = document.getElementById('pw-input').value;
+    if (!password) return showToast("请输入密码", "error");
+    
+    // 本地测试模式：直接设置token
+    localStorage.setItem('pdf_access_token', password);
+    accessPassword = password;
+    document.getElementById('login-container').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+    showToast("登录成功", "success");
+    loadFiles();
+}
+
+async function deleteSingle(id) {
+    if (!confirm("确定删除此文件？")) return;
+    const res = await fetch('/api/files', {
+        method: 'DELETE',
+        headers: { 'Authorization': accessPassword },
+        body: JSON.stringify([id])
+    });
+    if (res.ok) { showToast("删除成功", "success"); loadFiles(); }
+}
+
+async function restoreSingle(id) {
+    if (!confirm("确定恢复此文件？")) return;
+    const formData = new FormData();
+    formData.append('action', 'restore');
+    formData.append('id', id);
+    
+    const res = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Authorization': accessPassword },
+        body: formData
+    });
+    if (res.ok) { showToast("恢复成功", "success"); loadFiles(); }
+}
+
+function cancelBatch() {
+    selectedIds.clear();
+    toggleSelect();
+}
+
+function renderFileList() {
+    loadFiles();
+}
+
 function logout() { localStorage.removeItem('pdf_access_token'); location.reload(); }
 init();
