@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PDF 库 | 管理中心</title>
+    <title>PDF 库 | R2 存储版</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,18 +25,12 @@
         <section class="add-section">
             <div class="input-grid-v2">
                 <div class="row">
-                    <input type="text" id="fileName" placeholder="文件名称">
+                    <input type="text" id="fileName" placeholder="文件显示名称">
                     <input type="text" id="fileTags" placeholder="标签 (英文逗号分隔)">
                 </div>
                 <div class="row">
-                    <input type="file" id="fileUpload" accept=".pdf" placeholder="选择PDF文件">
-                    <button id="addBtn" onclick="uploadFile()" class="btn-primary">上传文件</button>
-                </div>
-                <div class="row" id="uploadProgress" style="display: none;">
-                    <div class="progress-bar" style="width: 100%; background: #f1f1f1; border-radius: 4px; height: 8px;">
-                        <div id="progressFill" style="width: 0%; background: #3b82f6; border-radius: 4px; height: 100%; transition: width 0.3s ease;"></div>
-                    </div>
-                    <span id="progressText" style="font-size: 12px; color: #64748b; margin-top: 4px;">上传进度: 0%</span>
+                    <input type="file" id="fileInput" accept=".pdf" style="flex:1;">
+                    <button id="addBtn" onclick="addFile()" class="btn-primary">上传并添加</button>
                 </div>
             </div>
         </section>
@@ -45,7 +39,6 @@
             <ul id="fileList"></ul>
         </section>
     </div>
-
     <div id="toast" class="toast"></div>
     <script src="script.js"></script>
 </body>
