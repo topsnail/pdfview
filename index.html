@@ -53,9 +53,12 @@
         <ul id="fileList" class="file-list-v"></ul>
 
         <div id="batch-bar" class="batch-bar" style="display:none;">
-            <span id="batch-count">已选 0 项</span>
+            <div class="batch-bar-left">
+                <span id="batch-count">已选 0 项</span>
+                <button onclick="selectAllFiles()" class="select-all-btn">全选</button>
+            </div>
             <div class="batch-btns">
-                <button onclick="batchDelete()" class="btn-del-sec">执行删除</button>
+                <button onclick="batchDelete()" class="btn-del-sec">删除</button>
                 <button onclick="cancelBatch()" class="btn-link">取消</button>
             </div>
         </div>

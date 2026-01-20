@@ -51,17 +51,48 @@ async function loadFiles() {
     });
     if (res.status === 401) return logout();
     const data = await res.json();
+    
+    // 添加调试日志，查看数据结构
+    console.log('后端返回的数据:', data);
+    if (data.length > 0) {
+        console.log('第一个文件的数据:', data[0]);
+        console.log('第一个文件的大小:', data[0].size);
+    }
+    
     renderList(data);
 }
 
 function formatFileSize(bytes) {
+    // 全面的输入检查和处理
+    if (bytes === undefined || bytes === null || bytes === '') {
+        return '未知大小';
+    }
+    
     // 确保bytes是数字类型
-    const size = Number(bytes) || 0;
+    const size = Number(bytes);
+    
+    // 检查是否为有效数字
+    if (isNaN(size) || size < 0) {
+        return '未知大小';
+    }
+    
     if (size === 0) return '0 B';
+    
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(size) / Math.log(k));
     return parseFloat((size / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function generateShareLink(fileId) {
+    const baseUrl = window.location.origin;
+    const shareLink = `${baseUrl}/viewer.html?file=/api/raw?id=${fileId}`;
+    navigator.clipboard.writeText(shareLink).then(() => {
+        showToast("分享链接已复制到剪贴板", "success");
+    }).catch(err => {
+        showToast("复制失败，请手动复制", "error");
+        console.error('无法复制链接:', err);
+    });
 }
 
 function renderList(data) {
@@ -74,7 +105,10 @@ function renderList(data) {
                 <div style="font-size:11px; color:#94a3b8">📅 ${file.date} | 📦 ${file.size ? formatFileSize(file.size) : '未知大小'} | 🏷️ ${file.tags.map(tag => `<span class="tag-item" onclick="searchByTag('${tag}')" style="cursor: pointer; color: var(--primary); text-decoration: underline; margin-right: 4px;">${tag}</span>`).join(', ')}</div>
             </div>
             ${currentTab === 'library' 
-                ? `<button onclick="deleteSingle('${file.id}')" class="btn-icon"><i class="fas fa-trash"></i></button>`
+                ? `
+                    <button onclick="generateShareLink('${file.id}')" class="btn-icon"><i class="fas fa-share-alt"></i></button>
+                    <button onclick="deleteSingle('${file.id}')" class="btn-icon"><i class="fas fa-trash"></i></button>
+                  `
                 : `<button onclick="restoreSingle('${file.id}')" class="btn-icon"><i class="fas fa-undo"></i></button>`}
         </li>
     `).join('');
