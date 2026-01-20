@@ -167,6 +167,13 @@
                     enableXfa: true,
                     disableFontFace: true,
                     renderInteractiveForms: true,
+                    useOnlyCssZoom: false,
+                    textLayerMode: 1,
+                    disableRange: false,
+                    disableStream: false,
+                    enableScripting: true,
+                    maxImageSize: 1000000,
+                    ignoreFontErrors: true,
                 });
 
                 const pdf = await loadingTask.promise;
