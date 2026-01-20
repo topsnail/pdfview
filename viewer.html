@@ -165,6 +165,8 @@
                     cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
                     cMapPacked: true,
                     enableXfa: true,
+                    disableFontFace: true,
+                    renderInteractiveForms: true,
                 });
 
                 const pdf = await loadingTask.promise;
