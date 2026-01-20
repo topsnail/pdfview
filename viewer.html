@@ -139,13 +139,14 @@
         <div id="status" class="loading">正在准备渲染引擎...</div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script>
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
         const params = new URLSearchParams(location.search);
         const fileUrl = params.get('file');
+        const PDF_JS_VERSION = '3.11.174'; // 确保这个版本和你引入的 pdf.min.js 一致
 
         if (!fileUrl) {
             document.getElementById('status').textContent = '未找到文件参数';
@@ -162,10 +163,9 @@
                 // 使用跨域代理或直接加载
                 const loadingTask = pdfjsLib.getDocument({
                     url: fileUrl,
-                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/cmaps/',
+                    cMapUrl: `https://unpkg.com/pdfjs-dist@${PDF_JS_VERSION}/cmaps/`,
                     cMapPacked: true,
-                    // 添加下面这一行
-                    standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/standard_fonts/',
+                    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${PDF_JS_VERSION}/standard_fonts/`,
                     disableFontFace: false,
                     enableXfa: true,
                     renderInteractiveForms: true,
