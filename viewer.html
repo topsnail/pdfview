@@ -190,14 +190,14 @@
         async function initPDFJS() {
             try {
                 // 动态导入PDF.js核心库
-                const module = await import('./pdfjs/build/pdf.mjs');
+                const module = await import('./pdfjs/pdf.mjs');
                 pdfjsLib = module.default;
                 
                 // 设置Worker路径
-                pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/build/pdf.worker.mjs';
+                pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.mjs';
                 
                 // 设置CMap资源路径
-                pdfjsLib.GlobalWorkerOptions.cMapUrl = './pdfjs/web/cmaps/';
+                pdfjsLib.GlobalWorkerOptions.cMapUrl = './pdfjs/cmaps/';
                 pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
                 
                 console.log('PDF.js库加载成功');
