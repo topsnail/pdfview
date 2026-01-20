@@ -13,29 +13,24 @@ export default {
 
     if (request.method === "OPTIONS") return new Response(null, { headers });
 
-    // --- 1. 公开预览接口 (带 CDN 缓存) ---
+    // 1. 公开预览接口 (带缓存)
     if (url.pathname === '/api/raw') {
       const id = url.searchParams.get('id');
       const file = await bucket.get(id);
       if (!file) return new Response('Not Found', { status: 404 });
-      
       const resHeaders = new Headers(headers);
       file.writeHttpMetadata(resHeaders);
       resHeaders.set('Content-Type', 'application/pdf');
-      resHeaders.set('Cache-Control', 'public, max-age=3600'); // 浏览器缓存1小时
+      resHeaders.set('Cache-Control', 'public, max-age=3600'); 
       return new Response(file.body, { headers: resHeaders });
     }
 
-    // --- 2. API 接口 (需要校验密码) ---
+    // 2. API 接口校验 (只在请求 API 时拦截)
     if (url.pathname.startsWith('/api/files')) {
       const isAuth = request.headers.get('Authorization') === password;
-      if (!isAuth) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-          status: 401, headers: { ...headers, 'Content-Type': 'application/json' } 
-        });
-      }
+      if (!isAuth) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers });
 
-      // 获取列表 (支持分页和回收站)
+      // GET: 获取列表 (分页)
       if (request.method === 'GET') {
         const tab = url.searchParams.get('tab') || 'library';
         const page = parseInt(url.searchParams.get('page') || '1');
@@ -43,21 +38,15 @@ export default {
         const search = url.searchParams.get('q') || '';
 
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
-        
-        // 过滤状态和搜索
         let filtered = list.filter(f => (tab === 'trash' ? f.isDeleted : !f.isDeleted));
-        if (search) {
-          filtered = filtered.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
-        }
+        if (search) filtered = filtered.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
         filtered.sort((a, b) => b.id - a.id);
 
-        const total = filtered.length;
         const data = filtered.slice((page - 1) * limit, page * limit);
-
-        return new Response(JSON.stringify({ data, total }), { headers });
+        return new Response(JSON.stringify({ data, total: filtered.length }), { headers });
       }
 
-      // 上传与恢复 (POST)
+      // POST: 上传/恢复
       if (request.method === 'POST') {
         const formData = await request.formData();
         const action = formData.get('action');
@@ -68,32 +57,29 @@ export default {
           list = list.map(f => f.id === id ? { ...f, isDeleted: false } : f);
         } else {
           const file = formData.get('file');
-          const name = formData.get('name');
-          const tags = formData.get('tags');
           const newId = id || Date.now().toString();
           if (file && typeof file !== 'string') await bucket.put(newId, file);
-
           const fileData = {
-            id: newId, name,
+            id: newId, 
+            name: formData.get('name'),
             url: `/api/raw?id=${newId}`,
-            tags: tags ? tags.split(',').map(t => t.trim()) : [],
+            tags: (formData.get('tags') || '').split(',').map(t => t.trim()).filter(t => t),
             date: new Date().toLocaleDateString(),
             isDeleted: false
           };
           const idx = list.findIndex(f => f.id === newId);
-          if (idx > -1) list[idx] = { ...list[idx], ...fileData }; else list.push(fileData);
+          if (idx > -1) list[idx] = fileData; else list.push(fileData);
         }
         await kv.put('FILE_LIST', JSON.stringify(list));
         return new Response('OK', { headers });
       }
 
-      // 批量删除 (DELETE)
+      // DELETE: 逻辑删除/彻底删除
       if (request.method === 'DELETE') {
-        const id = url.searchParams.get('id');
-        const ids = id ? [id] : JSON.parse(await request.text());
+        const ids = JSON.parse(await request.text());
         const permanent = url.searchParams.get('purge') === 'true';
-
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
+
         if (permanent) {
           for (const targetId of ids) { await bucket.delete(targetId); }
           list = list.filter(f => !ids.includes(f.id));
@@ -105,7 +91,7 @@ export default {
       }
     }
 
-    // --- 3. 静态资源托管 (不校验密码，允许显示网页) ---
+    // 3. 兜底返回静态资源
     return env.ASSETS.fetch(request);
   }
 };
