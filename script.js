@@ -83,7 +83,6 @@ function renderFileList() {
                         <button onclick="shareFile('${file.url}')" class="btn-icon">享</button>
                     </div>
                 </div>
-                <div class="file-footer"><span class="file-date">${file.date || ''}</span></div>
             `}
         </li>`
     }).join('');
