@@ -162,18 +162,23 @@
                 // 使用跨域代理或直接加载
                 const loadingTask = pdfjsLib.getDocument({
                     url: fileUrl,
+                    // 1. 确保 cMap 路径正确且能访问
                     cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
                     cMapPacked: true,
+                    
+                    // 2. 关键：必须设为 false，允许加载 PDF 内部字体
+                    disableFontFace: false,
+                    
+                    // 3. 增强兼容性配置
                     enableXfa: true,
-                    disableFontFace: true,
                     renderInteractiveForms: true,
-                    useOnlyCssZoom: false,
-                    textLayerMode: 1,
-                    disableRange: false,
-                    disableStream: false,
+                    
+                    // 4. 调试建议：暂时关闭忽略字体错误，以便在控制台看到具体的报错
+                    ignoreFontErrors: false,
+                    
+                    // 其他重要配置
                     enableScripting: true,
-                    maxImageSize: 1000000,
-                    ignoreFontErrors: true,
+                    textLayerMode: 1,
                 });
 
                 const pdf = await loadingTask.promise;
