@@ -182,34 +182,58 @@
         <div id="progress-text" class="progress-text" style="display: none;">加载中... 0%</div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js"></script>
     <script>
-        // 确保PDF.js库正确加载
+        // 使用本地PDF.js库
         let pdfjsLib;
-        if (window.pdfjsLib) {
-            pdfjsLib = window.pdfjsLib;
-        } else if (window['pdfjs-dist']) {
-            pdfjsLib = window['pdfjs-dist'];
-        } else if (typeof pdfjsLib !== 'undefined') {
-            // 直接使用全局变量
-        } else {
-            console.error('PDF.js库未正确加载');
-            document.getElementById('status').textContent = 'PDF.js库加载失败';
-            document.getElementById('status').className = 'error';
+        
+        // 立即开始初始化
+        async function initPDFJS() {
+            try {
+                // 动态导入PDF.js核心库
+                const module = await import('./pdfjs/build/pdf.mjs');
+                pdfjsLib = module.default;
+                
+                // 设置Worker路径
+                pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/build/pdf.worker.mjs';
+                
+                // 设置CMap资源路径
+                pdfjsLib.GlobalWorkerOptions.cMapUrl = './pdfjs/web/cmaps/';
+                pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
+                
+                console.log('PDF.js库加载成功');
+                console.log('PDF.js版本:', pdfjsLib.version);
+                
+                return pdfjsLib;
+            } catch (error) {
+                console.error('PDF.js库加载失败:', error);
+                throw error;
+            }
         }
 
-        const params = new URLSearchParams(location.search);
-        const fileUrl = params.get('file');
-        const PDF_JS_VERSION = '4.0.379'; // 当前版本
-
-        if (!fileUrl) {
-            document.getElementById('status').textContent = '未找到文件参数';
+        // 立即初始化PDF.js库
+        initPDFJS().then(lib => {
+            pdfjsLib = lib;
+            init();
+        }).catch(error => {
+            console.error('PDF.js库加载失败:', error);
+            document.getElementById('status').textContent = 'PDF.js库加载失败';
             document.getElementById('status').className = 'error';
-        } else if (typeof pdfjsLib === 'undefined') {
-            console.error('PDF.js库未加载，无法渲染PDF');
-        } else {
-            renderPDF();
+        });
+
+        function init() {
+            const params = new URLSearchParams(location.search);
+            const fileUrl = params.get('file');
+
+            if (!fileUrl) {
+                document.getElementById('status').textContent = '未找到文件参数';
+                document.getElementById('status').className = 'error';
+            } else if (typeof pdfjsLib === 'undefined') {
+                console.error('PDF.js库未加载，无法渲染PDF');
+                document.getElementById('status').textContent = 'PDF.js库未加载，无法渲染PDF';
+                document.getElementById('status').className = 'error';
+            } else {
+                renderPDF();
+            }
         }
 
         async function renderPDF() {
