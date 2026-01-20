@@ -86,6 +86,40 @@ function showToast(msg, type = "success") {
     setTimeout(() => t.classList.remove('show'), 1500); 
 }
 
+// 确认框功能
+function showConfirm(title, message, onConfirm) {
+    const modal = document.getElementById('confirm-modal');
+    const confirmTitle = document.getElementById('confirm-title');
+    const confirmMessage = document.getElementById('confirm-message');
+    const confirmOk = document.getElementById('confirm-ok');
+    const confirmCancel = document.getElementById('confirm-cancel');
+    
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    modal.style.display = 'flex';
+    
+    // 清除之前的事件监听器
+    confirmOk.onclick = null;
+    confirmCancel.onclick = null;
+    
+    // 添加新的事件监听器
+    confirmOk.onclick = () => {
+        modal.style.display = 'none';
+        if (onConfirm) onConfirm();
+    };
+    
+    confirmCancel.onclick = () => {
+        modal.style.display = 'none';
+    };
+    
+    // 点击背景关闭
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+}
+
 function onFileSelected() {
     const file = document.getElementById('fileInput').files[0];
     if (file) {
@@ -105,14 +139,19 @@ function toggleSelect(id) {
 }
 
 async function batchDelete() {
-    if (!confirm("确定执行批量删除？")) return;
-    const isPurge = currentTab === 'trash';
-    const res = await fetch(`/api/files${isPurge ? '?purge=true' : ''}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': accessPassword },
-        body: JSON.stringify(Array.from(selectedIds))
-    });
-    if (res.ok) { showToast("操作成功"); selectedIds.clear(); toggleSelect(); loadFiles(); }
+    showConfirm(
+        "批量删除",
+        "确定执行批量删除？",
+        async () => {
+            const isPurge = currentTab === 'trash';
+            const res = await fetch(`/api/files${isPurge ? '?purge=true' : ''}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': accessPassword },
+                body: JSON.stringify(Array.from(selectedIds))
+            });
+            if (res.ok) { showToast("操作成功"); selectedIds.clear(); toggleSelect(); loadFiles(); }
+        }
+    );
 }
 
 function switchTab(t) { currentTab = t; selectedIds.clear(); toggleSelect(); loadFiles(); 
@@ -133,27 +172,37 @@ function handleLogin() {
 }
 
 async function deleteSingle(id) {
-    if (!confirm("确定删除此文件？")) return;
-    const res = await fetch('/api/files', {
-        method: 'DELETE',
-        headers: { 'Authorization': accessPassword },
-        body: JSON.stringify([id])
-    });
-    if (res.ok) { showToast("删除成功", "success"); loadFiles(); }
+    showConfirm(
+        "删除文件",
+        "确定删除此文件？",
+        async () => {
+            const res = await fetch('/api/files', {
+                method: 'DELETE',
+                headers: { 'Authorization': accessPassword },
+                body: JSON.stringify([id])
+            });
+            if (res.ok) { showToast("删除成功", "success"); loadFiles(); }
+        }
+    );
 }
 
 async function restoreSingle(id) {
-    if (!confirm("确定恢复此文件？")) return;
-    const formData = new FormData();
-    formData.append('action', 'restore');
-    formData.append('id', id);
-    
-    const res = await fetch('/api/files', {
-        method: 'POST',
-        headers: { 'Authorization': accessPassword },
-        body: formData
-    });
-    if (res.ok) { showToast("恢复成功", "success"); loadFiles(); }
+    showConfirm(
+        "恢复文件",
+        "确定恢复此文件？",
+        async () => {
+            const formData = new FormData();
+            formData.append('action', 'restore');
+            formData.append('id', id);
+            
+            const res = await fetch('/api/files', {
+                method: 'POST',
+                headers: { 'Authorization': accessPassword },
+                body: formData
+            });
+            if (res.ok) { showToast("恢复成功", "success"); loadFiles(); }
+        }
+    );
 }
 
 function cancelBatch() {

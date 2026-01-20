@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF 智库 | 本地管理</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%22 y=%22.9em%22 font-size=%2285%22 text-anchor=%22middle%22>🧾</text></svg>">
+    <title>PDF 智库</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -64,6 +65,19 @@
     </div>
 
     <div id="toast" class="toast"></div>
+    
+    <!-- 确认框组件 -->
+    <div id="confirm-modal" class="confirm-modal" style="display: none;">
+        <div class="confirm-content">
+            <h3 id="confirm-title">确认操作</h3>
+            <p id="confirm-message">您确定要执行此操作吗？</p>
+            <div class="confirm-buttons">
+                <button id="confirm-cancel" class="btn-link">取消</button>
+                <button id="confirm-ok" class="btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
