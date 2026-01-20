@@ -3,7 +3,7 @@ export default {
     const url = new URL(request.url);
     const password = env.ACCESS_PASSWORD;
     const kv = env.PDF_FILES;
-    const bucket = env.MY_BUCKET; // 需在 Pages 后台绑定
+    const bucket = env.MY_BUCKET;
     
     const headers = { 
       'Access-Control-Allow-Origin': '*',
@@ -13,87 +13,101 @@ export default {
 
     if (request.method === "OPTIONS") return new Response(null, { headers });
 
-    // --- 1. 读取 R2 文件流 (供预览使用) ---
+    // --- 1. CDN 缓存优化 ---
     if (url.pathname === '/api/raw') {
       const id = url.searchParams.get('id');
-      if (!id) return new Response('ID Required', { status: 400 });
-      
       const file = await bucket.get(id);
-      if (!file) return new Response('File Not Found', { status: 404 });
+      if (!file) return new Response('Not Found', { status: 404 });
       
       const resHeaders = new Headers(headers);
       file.writeHttpMetadata(resHeaders);
       resHeaders.set('Content-Type', 'application/pdf');
-      resHeaders.set('Content-Disposition', 'inline'); // 确保是预览而非强制下载
+      // 设置缓存：浏览器缓存 1 小时，CDN 缓存 24 小时
+      resHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
       return new Response(file.body, { headers: resHeaders });
     }
 
     const isAuth = request.headers.get('Authorization') === password;
+    if (!isAuth) return new Response('Unauthorized', { status: 401, headers });
 
     if (url.pathname.startsWith('/api/files')) {
-      if (!isAuth) return new Response('Unauthorized', { status: 401, headers });
-
-      // --- 2. 获取列表 (从 KV 读取) ---
+      // --- 2. 获取列表（支持分页与回收站过滤） ---
       if (request.method === 'GET') {
-        const data = await kv.get('FILE_LIST');
-        return new Response(data || '[]', { 
+        const showDeleted = url.searchParams.get('tab') === 'trash';
+        const page = parseInt(url.searchParams.get('page') || '1');
+        const limit = parseInt(url.searchParams.get('limit') || '10');
+        
+        let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
+        
+        // 过滤回收站状态
+        let filtered = list.filter(f => showDeleted ? f.isDeleted : !f.isDeleted);
+        filtered.sort((a, b) => b.id - a.id); // 按时间倒序
+
+        const total = filtered.length;
+        const data = filtered.slice((page - 1) * limit, page * limit);
+
+        return new Response(JSON.stringify({ data, total, page, limit }), { 
           headers: { ...headers, 'Content-Type': 'application/json' } 
         });
       }
 
-      // --- 3. 上传/更新 (R2 + KV) ---
+      // --- 3. 上传与恢复 (POST) ---
       if (request.method === 'POST') {
-        try {
-          const formData = await request.formData();
-          const file = formData.get('file'); // 获取二进制文件
+        const formData = await request.formData();
+        const action = formData.get('action'); // 'restore' or 'upload'
+        const id = formData.get('id');
+        let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
+
+        if (action === 'restore') {
+          list = list.map(f => f.id === id ? { ...f, isDeleted: false } : f);
+        } else {
+          const file = formData.get('file');
           const name = formData.get('name');
           const tags = formData.get('tags');
-          const id = formData.get('id') || Date.now().toString();
+          const newId = id || Date.now().toString();
 
-          // 如果上传了新的文件内容，存入 R2
-          if (file && typeof file !== 'string') {
-            await bucket.put(id, file);
-          }
+          if (file && typeof file !== 'string') await bucket.put(newId, file);
 
-          let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
-          const idx = list.findIndex(f => f.id === id);
-          
           const fileData = {
-            id,
+            id: newId,
             name,
-            url: `/api/raw?id=${id}`, // 预览链接指向 Worker 自身接口
+            url: `/api/raw?id=${newId}`,
             tags: tags ? tags.split(',').map(t => t.trim()) : [],
-            date: new Date().toLocaleDateString()
+            date: new Date().toLocaleDateString(),
+            isDeleted: false
           };
 
-          if (idx > -1) {
-            // 编辑模式：合并新旧数据
-            list[idx] = { ...list[idx], ...fileData };
-          } else {
-            // 新增模式
-            list.push(fileData);
-          }
-
-          await kv.put('FILE_LIST', JSON.stringify(list));
-          return new Response('OK', { headers });
-        } catch (e) {
-          return new Response(e.message, { status: 500, headers });
+          const idx = list.findIndex(f => f.id === newId);
+          if (idx > -1) list[idx] = { ...list[idx], ...fileData };
+          else list.push(fileData);
         }
+
+        await kv.put('FILE_LIST', JSON.stringify(list));
+        return new Response('OK', { headers });
       }
 
-      // --- 4. 删除 (同时从 R2 和 KV 移除) ---
+      // --- 4. 逻辑删除与彻底删除 (DELETE) ---
       if (request.method === 'DELETE') {
         const id = url.searchParams.get('id');
-        await bucket.delete(id); // 删除 R2 物理文件
-        
+        const ids = id ? [id] : JSON.parse(await request.text()); // 支持批量
+        const permanent = url.searchParams.get('purge') === 'true';
+
         let list = JSON.parse(await kv.get('FILE_LIST') || '[]');
-        list = list.filter(f => f.id !== id);
+
+        if (permanent) {
+          // 彻底删除：从 R2 和 KV 同时移除
+          for (const targetId of ids) { await bucket.delete(targetId); }
+          list = list.filter(f => !ids.includes(f.id));
+        } else {
+          // 进入回收站：仅标记
+          list = list.map(f => ids.includes(f.id) ? { ...f, isDeleted: true } : f);
+        }
+
         await kv.put('FILE_LIST', JSON.stringify(list));
         return new Response('OK', { headers });
       }
     }
 
-    // 静态资源返回
     return env.ASSETS.fetch(request);
   }
 };

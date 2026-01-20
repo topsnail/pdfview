@@ -1,168 +1,184 @@
-const API_URL = '/api/files';
-let files = [];
+let currentTab = 'library';
+let currentPage = 1;
+const limit = 10;
+let selectedIds = new Set();
 let accessPassword = localStorage.getItem('pdf_access_token');
-let editingId = null;
 
-function init() {
-    if (!accessPassword) {
-        document.getElementById('login-container').style.display = 'flex';
-        document.getElementById('main-content').style.display = 'none';
-    } else {
-        document.getElementById('login-container').style.display = 'none';
-        document.getElementById('main-content').style.display = 'block';
-        loadFiles();
-    }
+// 切换标签
+function switchTab(tab) {
+    currentTab = tab;
+    currentPage = 1;
+    selectedIds.clear();
+    document.getElementById('tab-library').className = tab === 'library' ? 'active' : '';
+    document.getElementById('tab-trash').className = tab === 'trash' ? 'active' : '';
+    updateBatchToolbar();
+    loadFiles();
 }
 
-// 辅助：选择文件后更新界面文本
-function updateFileNameDisplay() {
-    const input = document.getElementById('fileInput');
-    const display = document.getElementById('file-name-display');
-    if (input.files.length > 0) {
-        display.textContent = input.files[0].name;
-        // 自动填入标题建议
-        const nameInput = document.getElementById('fileName');
-        if (!nameInput.value) {
-            nameInput.value = input.files[0].name.replace('.pdf', '');
-        }
-    }
-}
-
-async function apiFetch(url, options = {}) {
-    options.headers = { ...options.headers, 'Authorization': accessPassword };
-    const res = await fetch(url, options);
-    if (res && res.status === 401) { logout(); return null; }
-    return res;
-}
-
+// 带进度的上传
 async function addFile() {
     const fileInput = document.getElementById('fileInput');
     const name = document.getElementById('fileName').value;
     const tags = document.getElementById('fileTags').value;
-    const btn = document.getElementById('addBtn');
-
-    if (!fileInput.files[0] || !name) return showToast("请填写名称并选择文件");
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上传中...';
+    if (!fileInput.files[0] || !name) return showToast("请填写名称并选择文件", "error");
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('name', name);
     formData.append('tags', tags);
+    formData.append('action', 'upload');
 
-    try {
-        const res = await apiFetch(API_URL, { method: 'POST', body: formData });
-        if (res && res.ok) {
-            showToast("✨ 上传成功！");
+    const xhr = new XMLHttpRequest();
+    const pContainer = document.getElementById('progress-container');
+    const pBar = document.getElementById('progress-bar');
+    const pText = document.getElementById('progress-text');
+
+    pContainer.style.display = 'block';
+    document.getElementById('addBtn').disabled = true;
+
+    xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            pBar.style.width = percent + '%';
+            pText.textContent = percent + '%';
+        }
+    };
+
+    xhr.onload = () => {
+        if (xhr.status === 200) {
+            showToast("文件上传成功", "success");
             fileInput.value = '';
-            document.getElementById('file-name-display').textContent = '选择 PDF 文件';
             document.getElementById('fileName').value = '';
-            document.getElementById('fileTags').value = '';
             loadFiles();
         } else {
-            showToast("❌ 上传失败，请检查配置");
+            showToast("上传失败: " + xhr.status, "error");
         }
-    } catch (e) {
-        showToast("系统错误");
-    }
-    btn.disabled = false;
-    btn.innerHTML = '开始上传';
+        setTimeout(() => pContainer.style.display = 'none', 1000);
+        document.getElementById('addBtn').disabled = false;
+    };
+
+    xhr.open('POST', '/api/files');
+    xhr.setRequestHeader('Authorization', accessPassword);
+    xhr.send(formData);
 }
 
-function renderFileList() {
-    const query = document.getElementById('searchInput').value.toLowerCase();
-    const list = document.getElementById('fileList');
+// 加载列表（支持分页）
+async function loadFiles() {
+    const query = document.getElementById('searchInput').value;
+    const url = `/api/files?tab=${currentTab}&page=${currentPage}&limit=${limit}&q=${encodeURIComponent(query)}`;
+    const res = await fetch(url, { headers: { 'Authorization': accessPassword } });
     
-    const filtered = files.filter(f => {
-        if (query.startsWith('#')) return f.tags?.some(t => t.toLowerCase().includes(query.slice(1)));
-        return f.name.toLowerCase().includes(query);
+    if (res.status === 401) return logout();
+    const result = await res.json();
+    renderList(result.data);
+    renderPagination(result.total);
+}
+
+function renderList(data) {
+    const list = document.getElementById('fileList');
+    list.innerHTML = data.map(file => `
+        <li class="file-card">
+            <input type="checkbox" class="file-checkbox" ${selectedIds.has(file.id) ? 'checked' : ''} 
+                   onchange="toggleSelect('${file.id}')">
+            <div class="file-info">
+                <a href="viewer.html?file=${encodeURIComponent(file.url)}" target="_blank" class="file-title">
+                    <i class="far fa-file-pdf" style="color:#ef4444"></i> ${file.name}
+                </a>
+                <div class="tag-container">
+                    ${(file.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}
+                    <span style="font-size:10px; color:#94a3b8; margin-left:10px">${file.date}</span>
+                </div>
+            </div>
+            <div class="file-actions">
+                ${currentTab === 'library' 
+                    ? `<button onclick="deleteSingle('${file.id}')" class="btn-icon btn-del"><i class="fas fa-trash"></i></button>`
+                    : `<button onclick="restoreSingle('${file.id}')" class="btn-icon" style="color:var(--success)"><i class="fas fa-undo"></i></button>
+                       <button onclick="purgeSingle('${file.id}')" class="btn-icon btn-del"><i class="fas fa-times-circle"></i></button>`
+                }
+            </div>
+        </li>
+    `).join('');
+}
+
+// 批量逻辑
+function toggleSelect(id) {
+    if (selectedIds.has(id)) selectedIds.delete(id);
+    else selectedIds.add(id);
+    updateBatchToolbar();
+}
+
+function updateBatchToolbar() {
+    const toolbar = document.getElementById('batch-toolbar');
+    const count = document.getElementById('batch-count');
+    if (selectedIds.size > 0) {
+        toolbar.style.display = 'flex';
+        count.textContent = `已选 ${selectedIds.size} 项`;
+    } else {
+        toolbar.style.display = 'none';
+    }
+}
+
+async function batchDelete() {
+    if (!confirm(`确定删除选中的 ${selectedIds.size} 个文件吗？`)) return;
+    const isPurge = currentTab === 'trash';
+    const url = `/api/files${isPurge ? '?purge=true' : ''}`;
+    
+    const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { 'Authorization': accessPassword, 'Content-Type': 'application/json' },
+        body: JSON.stringify(Array.from(selectedIds))
     });
 
-    document.getElementById('file-count').textContent = filtered.length;
-
-    list.innerHTML = filtered.reverse().map(file => {
-        const isEditing = editingId === file.id;
-        return `
-        <li class="file-card">
-            <div class="file-row">
-                ${isEditing ? `
-                    <div class="form-grid">
-                        <input type="text" id="edit-name-${file.id}" value="${file.name}">
-                        <input type="text" id="edit-tags-${file.id}" value="${(file.tags || []).join(',')}">
-                        <div class="actions-inline">
-                            <button onclick="saveEdit('${file.id}')" class="btn-upload" style="padding:5px 15px">保存</button>
-                            <button onclick="cancelEdit()" class="btn-icon">取消</button>
-                        </div>
-                    </div>
-                ` : `
-                    <div class="file-info">
-                        <a href="viewer.html?file=${encodeURIComponent(file.url)}" target="_blank" class="file-title-link">
-                           <i class="far fa-file-pdf" style="margin-right:8px; color:#ef4444"></i>${file.name}
-                        </a>
-                        <div class="tag-container">
-                            ${(file.tags || []).map(t => `<span class="tag" onclick="quickSearch('#${t}')">${t}</span>`).join('')}
-                        </div>
-                        <div class="actions-inline">
-                            <button onclick="startEdit('${file.id}')" class="btn-icon" title="重命名"><i class="fas fa-edit"></i></button>
-                            <button onclick="deleteFile('${file.id}')" class="btn-icon btn-del" title="删除"><i class="fas fa-trash-alt"></i></button>
-                            <button onclick="shareFile('${file.url}')" class="btn-icon" title="分享链接"><i class="fas fa-share-alt"></i></button>
-                        </div>
-                    </div>
-                `}
-            </div>
-        </li>`
-    }).join('');
-}
-
-// ... 其余 loadFiles, deleteFile, saveEdit, logout, showToast 函数保持不变 ...
-async function loadFiles() {
-    const res = await apiFetch(API_URL);
-    if (res && res.ok) files = await res.json();
-    renderFileList();
-}
-
-async function saveEdit(id) {
-    const name = document.getElementById(`edit-name-${id}`).value;
-    const tags = document.getElementById(`edit-tags-${id}`).value;
-    const formData = new FormData();
-    formData.append('id', id);
-    formData.append('name', name);
-    formData.append('tags', tags);
-    const res = await apiFetch(API_URL, { method: 'POST', body: formData });
-    if (res && res.ok) { editingId = null; loadFiles(); showToast("已更新"); }
-}
-
-async function deleteFile(id) {
-    if (confirm("确定要删除吗？此操作无法撤销。")) {
-        const res = await apiFetch(`${API_URL}?id=${id}`, { method: 'DELETE' });
-        if (res.ok) { showToast("文件已删除"); loadFiles(); }
+    if (res.ok) {
+        showToast("批量操作完成", "success");
+        selectedIds.clear();
+        updateBatchToolbar();
+        loadFiles();
     }
 }
 
-function shareFile(url) {
-    const shareUrl = `${window.location.origin}/viewer.html?file=${encodeURIComponent(url)}`;
-    navigator.clipboard.writeText(shareUrl);
-    showToast("📋 链接已复制到剪贴板");
+// 分页渲染
+function renderPagination(total) {
+    const totalPages = Math.ceil(total / limit);
+    const container = document.getElementById('pagination');
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+    
+    let html = '';
+    for (let i = 1; i <= totalPages; i++) {
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" 
+                 onclick="changePage(${i})">${i}</button>`;
+    }
+    container.innerHTML = html;
 }
 
-function handleLogin() {
-    const input = document.getElementById('pw-input');
-    if (!input.value) return;
-    accessPassword = input.value;
-    localStorage.setItem('pdf_access_token', accessPassword);
-    init();
+function changePage(p) { currentPage = p; loadFiles(); }
+
+function showToast(msg, type = "info") {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast show ${type}`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// 初始启动
+window.onload = () => {
+    if (accessPassword) {
+        document.getElementById('main-content').style.display = 'block';
+        loadFiles();
+    } else {
+        document.getElementById('login-container').style.display = 'flex';
+    }
+};
+
+async function handleLogin() {
+    const pw = document.getElementById('pw-input').value;
+    accessPassword = pw;
+    localStorage.setItem('pdf_access_token', pw);
+    location.reload();
 }
 
 function logout() { localStorage.removeItem('pdf_access_token'); location.reload(); }
-function startEdit(id) { editingId = id; renderFileList(); }
-function cancelEdit() { editingId = null; renderFileList(); }
-function quickSearch(tag) { document.getElementById('searchInput').value = tag; renderFileList(); }
-
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+function updateSelectedFileName() {
+    const file = document.getElementById('fileInput').files[0];
+    if (file) document.getElementById('fileName').value = file.name.replace('.pdf', '');
 }
-
-init();

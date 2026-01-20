@@ -2,58 +2,63 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的 PDF 智库</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 智库专业版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="login-container" class="auth-wrapper" style="display: none;">
         <div class="auth-card">
-            <div class="auth-icon"><i class="fas fa-unlock-alt"></i></div>
             <h2>身份验证</h2>
-            <p>请输入管理密码以访问库</p>
-            <input type="password" id="pw-input" placeholder="••••••••" onkeyup="if(event.keyCode===13) handleLogin()">
-            <button onclick="handleLogin()" class="btn-primary">进入系统</button>
+            <input type="password" id="pw-input" placeholder="请输入管理密码...">
+            <button onclick="handleLogin()" class="btn-primary">进入</button>
         </div>
     </div>
 
     <div id="main-content" class="container" style="display: none;">
         <header class="main-header">
-            <div class="logo">
-                <i class="fas fa-file-pdf"></i>
-                <h1>PDF <span>Archive</span></h1>
+            <div class="logo"><h1>PDF <span>R2</span></h1></div>
+            <div class="nav-tabs">
+                <button onclick="switchTab('library')" id="tab-library" class="active">现有库</button>
+                <button onclick="switchTab('trash')" id="tab-trash">回收站</button>
             </div>
-            <button onclick="logout()" class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+            <button onclick="logout()" class="btn-icon"><i class="fas fa-sign-out-alt"></i></button>
         </header>
 
-        <div class="search-wrapper">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="搜索标题或使用 #标签..." oninput="renderFileList()">
-        </div>
-
         <section class="upload-box">
-            <h3><i class="fas fa-cloud-upload-alt"></i> 新增文件</h3>
             <div class="form-grid">
-                <input type="text" id="fileName" placeholder="给文件取个名字...">
-                <input type="text" id="fileTags" placeholder="标签 (用逗号分隔，如：学习, 工作)">
-                <div class="file-select-group">
-                    <label for="fileInput" class="custom-file-upload">
-                        <i class="fas fa-paperclip"></i> <span id="file-name-display">选择 PDF 文件</span>
-                    </label>
-                    <input type="file" id="fileInput" accept=".pdf" onchange="updateFileNameDisplay()">
-                    <button id="addBtn" onclick="addFile()" class="btn-upload">开始上传</button>
+                <div class="input-row">
+                    <input type="text" id="fileName" placeholder="文档名称">
+                    <input type="text" id="fileTags" placeholder="标签(逗号分隔)">
+                </div>
+                <div class="file-ctrl">
+                    <label for="fileInput" class="file-label"><i class="fas fa-plus"></i> 选择 PDF</label>
+                    <input type="file" id="fileInput" accept=".pdf" onchange="updateSelectedFileName()">
+                    <button id="addBtn" onclick="addFile()" class="btn-upload">上传</button>
+                </div>
+                <div id="progress-container" class="progress-container" style="display:none;">
+                    <div id="progress-bar" class="progress-bar"></div>
+                    <span id="progress-text">0%</span>
                 </div>
             </div>
         </section>
 
-        <section class="list-container">
-            <div class="list-header">
-                <span>全部文件</span>
-                <span id="file-count" class="badge">0</span>
+        <div id="batch-toolbar" class="batch-toolbar" style="display:none;">
+            <span id="batch-count">已选 0 项</span>
+            <div class="batch-btns">
+                <button onclick="batchDelete()" class="btn-del-sec">批量删除</button>
+                <button onclick="clearSelection()" class="btn-link">取消</button>
             </div>
-            <ul id="fileList" class="pdf-grid"></ul>
-        </section>
+        </div>
+
+        <div class="list-wrapper">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="搜索文件..." oninput="handleSearch()">
+            </div>
+            <ul id="fileList" class="file-list-v"></ul>
+            <div id="pagination" class="pagination"></div>
+        </div>
     </div>
 
     <div id="toast" class="toast"></div>
