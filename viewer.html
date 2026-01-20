@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF 预览</title>
+    <!-- 添加PDF.js库 -->
+    <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -143,6 +146,22 @@
             transform: translateY(0);
         }
         
+        /* 重新加载按钮 */
+        .reload-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .reload-btn:hover {
+            background: #4338ca;
+        }
+        
         @media (max-width: 768px) {
             .toolbar {
                 height: 36px;
@@ -159,7 +178,7 @@
                 padding: 15px 10px;
             }
             
-            。page-container {
+            .page-container {
                 margin-bottom: 15px;
                 border-radius: 6px;
             }
@@ -183,56 +202,130 @@
     </div>
 
     <script>
-        // 使用 cdnjs 的 PDF.js 库
-        let pdfjsLib;
+        // 全局变量
+        let pdfjsLib = null;
+        let pdfLoadingTask = null;
         
-        // 立即开始初始化
-        async function initPDFJS() {
-            try {
-                // 动态导入PDF.js核心库
-                const module = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.mjs');
-                pdfjsLib = module.default;
+        // 检查PDF.js库是否加载成功
+        function checkPDFJSLoaded() {
+            return typeof window.pdfjsLib !== 'undefined';
+        }
+        
+        // 初始化PDF.js库
+        function initPDFJS() {
+            if (checkPDFJSLoaded()) {
+                console.log('PDF.js库已加载');
+                pdfjsLib = window.pdfjsLib;
                 
-                // 设置Worker路径
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs';
+                // 设置worker路径
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
                 
-                // 设置CMap资源路径
-                const CMAP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/cmaps/';
-                pdfjsLib.GlobalWorkerOptions.cMapUrl = CMAP_URL;
+                // 设置CMap资源路径（用于中文支持）
+                pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/';
                 pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
                 
-                console.log('PDF.js 库加载成功');
-                return pdfjsLib;
-            } catch (error) {
-                console.error('PDF.js 库加载失败:', error);
-                throw error;
+                return true;
+            } else {
+                console.warn('PDF.js库未加载，尝试备选方案...');
+                return false;
             }
         }
-
-        // 立即初始化PDF.js库
-        initPDFJS().then(lib => {
-            pdfjsLib = lib;
-            init();
-        }).catch(error => {
-            document.getElementById('status').textContent = 'PDF.js 库加载失败';
-            document.getElementById('status').className = 'error';
-        });
-
-        function init() {
+        
+        // 备选方案：动态创建script标签加载PDF.js
+        function loadPDFJSFallback() {
+            return new Promise((resolve, reject) => {
+                // 检查是否已经加载
+                if (checkPDFJSLoaded()) {
+                    resolve();
+                    return;
+                }
+                
+                // 创建script标签
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+                script.onload = () => {
+                    // 等待一小段时间确保库完全初始化
+                    setTimeout(() => {
+                        if (checkPDFJSLoaded()) {
+                            console.log('PDF.js库通过备选方案加载成功');
+                            pdfjsLib = window.pdfjsLib;
+                            
+                            // 加载worker
+                            const workerScript = document.createElement('script');
+                            workerScript.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+                            document.head.appendChild(workerScript);
+                            
+                            // 设置配置
+                            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+                            pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
+                            pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
+                            
+                            resolve();
+                        } else {
+                            reject(new Error('PDF.js库加载失败'));
+                        }
+                    }, 100);
+                };
+                script.onerror = () => {
+                    reject(new Error('无法加载PDF.js库'));
+                };
+                
+                document.head.appendChild(script);
+            });
+        }
+        
+        // 初始化函数
+        async function init() {
+            const status = document.getElementById('status');
+            
+            try {
+                // 首先尝试初始化PDF.js
+                if (!initPDFJS()) {
+                    // 如果失败，尝试备选方案
+                    status.textContent = '正在加载PDF渲染引擎...';
+                    await loadPDFJSFallback();
+                }
+                
+                console.log('PDF.js初始化成功，版本:', pdfjsLib.version);
+                
+                // 库加载成功后，开始处理PDF文件
+                await startPDFViewer();
+                
+            } catch (error) {
+                console.error('PDF.js库初始化失败:', error);
+                status.textContent = 'PDF渲染引擎加载失败，请刷新重试';
+                status.className = 'error';
+                
+                // 添加重新加载按钮
+                const reloadBtn = document.createElement('button');
+                reloadBtn.textContent = '重新加载';
+                reloadBtn.className = 'reload-btn';
+                reloadBtn.onclick = () => {
+                    location.reload();
+                };
+                status.appendChild(document.createElement('br'));
+                status.appendChild(reloadBtn);
+            }
+        }
+        
+        // 开始PDF查看器
+        async function startPDFViewer() {
             const params = new URLSearchParams(location.search);
             const fileUrl = params.get('file');
-
+            
             if (!fileUrl) {
                 document.getElementById('status').textContent = '未找到文件参数';
                 document.getElementById('status').className = 'error';
-            } else if (typeof pdfjsLib === 'undefined') {
-                document.getElementById('status').textContent = 'PDF.js 库未加载，无法渲染PDF';
-                document.getElementById('status').className = 'error';
-            } else {
-                renderPDF(fileUrl);
+                return;
             }
+            
+            // 解码URL参数
+            const decodedFileUrl = decodeURIComponent(fileUrl);
+            document.getElementById('title').textContent = 'PDF 预览 - ' + decodedFileUrl.split('/').pop() || '文件';
+            
+            await renderPDF(decodedFileUrl);
         }
-
+        
         async function renderPDF(fileUrl) {
             const container = document.getElementById('viewerContainer');
             const status = document.getElementById('status');
@@ -240,6 +333,7 @@
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
             
+            let simulatedProgress = 0;
             let progressInterval;
             
             try {
@@ -247,60 +341,77 @@
                 progressContainer.style.display = 'block';
                 progressText.style.display = 'block';
                 
-                let simulatedProgress = 0;
+                // 模拟进度
                 progressInterval = setInterval(() => {
-                    if (simulatedProgress < 80) {
-                        simulatedProgress += 5;
+                    if (simulatedProgress < 70) {
+                        simulatedProgress += 3;
                         progressBar.style.width = `${simulatedProgress}%`;
                         progressText.textContent = `加载中... ${simulatedProgress}%`;
                     }
                 }, 200);
                 
-                const loadingTask = pdfjsLib.getDocument({
+                // 加载PDF文档
+                pdfLoadingTask = pdfjsLib.getDocument({
                     url: fileUrl,
+                    cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+                    cMapPacked: true,
                     enableXfa: true,
                     progressCallback: (progressData) => {
                         if (progressData.total > 0) {
                             const progress = Math.round((progressData.loaded / progressData.total) * 100);
-                            simulatedProgress = progress; // Update simulated progress with real progress
+                            simulatedProgress = Math.max(simulatedProgress, progress);
                             progressBar.style.width = `${progress}%`;
                             progressText.textContent = `加载中... ${progress}%`;
                         }
                     }
                 });
-
-                const pdf = await loadingTask.promise;
+                
+                const pdf = await pdfLoadingTask.promise;
                 
                 if (progressInterval) clearInterval(progressInterval);
                 progressBar.style.width = '100%';
                 progressText.textContent = '加载完成... 100%';
                 
+                // 等待进度条显示完成
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
+                // 隐藏状态元素
                 status.remove();
                 progressContainer.style.display = 'none';
                 progressText.style.display = 'none';
-                document.getElementById('title').textContent = 'PDF 预览';
+                
+                // 更新页面信息
                 document.getElementById('pageInfo').textContent = `1 / ${pdf.numPages}`;
-
+                
+                // 计算容器宽度
                 const containerWidth = Math.min(window.innerWidth - 40, 900);
                 
+                // 创建页面元素数组
                 const pageElements = [];
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const pageDiv = document.createElement('div');
                     pageDiv.className = 'page-container';
                     pageDiv.dataset.page = i;
+                    
                     const canvas = document.createElement('canvas');
                     pageDiv.appendChild(canvas);
+                    
                     container.appendChild(pageDiv);
-                    pageElements.push({ pageNum: i, element: pageDiv, canvas: canvas, loaded: false });
+                    pageElements.push({ 
+                        pageNum: i, 
+                        element: pageDiv, 
+                        canvas: canvas, 
+                        loaded: false 
+                    });
                 }
                 
+                // 立即渲染前几页
                 const pagesToRenderFirst = Math.min(3, pdf.numPages);
                 for (let i = 0; i < pagesToRenderFirst; i++) {
                     await renderPage(pdf, pageElements[i], containerWidth);
                 }
                 
+                // 设置懒加载观察器
                 const observer = new IntersectionObserver((entries) => {
                     entries.forEach(async (entry) => {
                         if (entry.isIntersecting) {
@@ -311,73 +422,131 @@
                             }
                         }
                     });
-                }, { rootMargin: '200px 0px', threshold: 0.1 });
+                }, { 
+                    rootMargin: '200px 0px', 
+                    threshold: 0.1 
+                });
                 
+                // 观察剩余页面
                 pageElements.slice(pagesToRenderFirst).forEach(el => {
                     if (!el.loaded) observer.observe(el.element);
                 });
-
+                
+                // 监听滚动和窗口大小变化，更新当前页码
                 window.addEventListener('scroll', () => updateCurrentPage(pdf.numPages));
                 window.addEventListener('resize', () => updateCurrentPage(pdf.numPages));
+                
             } catch (e) {
+                console.error('PDF加载失败:', e);
+                
                 if (progressInterval) clearInterval(progressInterval);
-                status.textContent = '加载失败: ' + e.message;
+                
+                status.textContent = 'PDF加载失败: ' + (e.message || '未知错误');
                 status.className = 'error';
                 progressContainer.style.display = 'none';
                 progressText.style.display = 'none';
-                console.error('PDF加载失败:', e);
+                
+                // 添加重新加载按钮
+                const reloadBtn = document.createElement('button');
+                reloadBtn.textContent = '重新加载';
+                reloadBtn.className = 'reload-btn';
+                reloadBtn.onclick = () => {
+                    location.reload();
+                };
+                status.appendChild(document.createElement('br'));
+                status.appendChild(reloadBtn);
             }
         }
         
         async function renderPage(pdf, pageElement, containerWidth) {
             try {
                 const { pageNum, element, canvas } = pageElement;
+                
                 const page = await pdf.getPage(pageNum);
                 
+                // 计算设备像素比和缩放比例
                 const devicePixelRatio = window.devicePixelRatio || 1;
-                const backingStoreRatio = canvas.getContext('2d').webkitBackingStorePixelRatio || 1;
-                const ratio = devicePixelRatio / backingStoreRatio;
-
                 const baseScale = containerWidth / page.getViewport({ scale: 1 }).width;
-                const viewport = page.getViewport({ scale: baseScale * ratio });
-
+                const outputScale = baseScale * devicePixelRatio;
+                
+                // 获取视口
+                const viewport = page.getViewport({ scale: outputScale });
+                
+                // 设置Canvas尺寸
                 const context = canvas.getContext('2d');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
+                canvas.width = Math.floor(viewport.width);
+                canvas.height = Math.floor(viewport.height);
+                
+                // 设置Canvas显示尺寸
                 canvas.style.width = `${containerWidth}px`;
-                canvas.style.height = `${viewport.height / ratio}px`;
-                context.scale(ratio, ratio);
-
+                canvas.style.height = `${viewport.height / devicePixelRatio}px`;
+                
+                // 设置Canvas样式，确保清晰度
+                canvas.style.imageRendering = 'auto';
+                
+                // 渲染页面
                 const renderParams = {
                     canvasContext: context,
-                    viewport: page.getViewport({ scale: baseScale }),
-                    enhanceTextSelection: true,
-                    renderInteractiveForms: true
+                    viewport: viewport,
+                    enableWebGL: false,
+                    renderInteractiveForms: true,
+                    intent: 'display'
                 };
                 
                 await page.render(renderParams).promise;
                 
+                // 标记页面已加载
                 pageElement.loaded = true;
                 element.classList.add('loaded');
                 
+                // 更新当前页码
+                updateCurrentPage(pdf.numPages);
+                
             } catch (e) {
-                console.error(`渲染页面失败: ${pageElement.pageNum}`, e);
+                console.error(`渲染页面 ${pageElement.pageNum} 失败:`, e);
+                
+                // 在Canvas上显示错误信息
+                const { canvas } = pageElement;
+                const context = canvas.getContext('2d');
+                context.fillStyle = '#f8f9fa';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                
+                context.fillStyle = '#dc3545';
+                context.font = '14px Arial';
+                context.textAlign = 'center';
+                context.fillText(`页面 ${pageElement.pageNum} 渲染失败`, canvas.width / 2, canvas.height / 2);
             }
         }
-
+        
         function updateCurrentPage(totalPages) {
             const pageContainers = document.querySelectorAll('.page-container');
             let currentPage = 1;
+            let minDistance = Infinity;
             
+            // 找到距离视口顶部最近的页面
             pageContainers.forEach((container, index) => {
                 const rect = container.getBoundingClientRect();
-                if (rect.top < window.innerHeight * 0.2) {
+                const distance = Math.abs(rect.top);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
                     currentPage = index + 1;
                 }
             });
             
+            // 更新页面信息
             document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
         }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // 清理PDF加载任务
+        window.addEventListener('beforeunload', () => {
+            if (pdfLoadingTask) {
+                pdfLoadingTask.destroy();
+            }
+        });
     </script>
 </body>
 </html>
