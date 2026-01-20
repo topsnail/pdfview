@@ -65,6 +65,7 @@ export default {
           const id = Date.now().toString();
           // 获取文件大小 - 处理不同类型的文件对象
           let fileSize = 0;
+          let uploadFile = file;
           try {
             if (file.size) {
               fileSize = file.size;
@@ -73,21 +74,24 @@ export default {
             } else if (typeof file === 'string') {
               fileSize = new Blob([file]).size;
             } else if (file.stream) {
-              // 处理ReadableStream类型
+              // 处理ReadableStream类型 - 保存流内容
               const reader = file.stream().getReader();
+              let chunks = [];
               let totalBytes = 0;
               while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
+                chunks.push(value);
                 totalBytes += value.length;
               }
               fileSize = totalBytes;
+              uploadFile = new Blob(chunks);
             }
           } catch (e) {
             console.error('获取文件大小失败:', e);
           }
           // 写入 R2
-          await bucket.put(id, file);
+          await bucket.put(id, uploadFile);
           const fileData = {
             id: id,
             name: formData.get('name'),
