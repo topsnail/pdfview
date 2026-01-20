@@ -110,7 +110,7 @@
             max-width: 600px;
             margin: 20px auto;
             height: 8px;
-            background-color: #f0f0f0;
+            background-color: #7aeb7d;
             border-radius: 4px;
             overflow: hidden;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
@@ -205,13 +205,27 @@
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
             
+            // 模拟进度变量
+            let simulatedProgress = 0;
+            let progressInterval;
+            let hasRealProgress = false;
+            
             try {
                 // 显示进度条
                 status.textContent = '正在加载PDF文件...';
                 progressContainer.style.display = 'block';
                 progressText.style.display = 'block';
                 
-                // 使用跨域代理或直接加载
+                // 开始模拟进度
+                progressInterval = setInterval(() => {
+                    if (!hasRealProgress && simulatedProgress < 80) {
+                        simulatedProgress += 5;
+                        progressBar.style.width = `${simulatedProgress}%`;
+                        progressText.textContent = `加载中... ${simulatedProgress}%`;
+                    }
+                }, 200);
+                
+                // 使用跨域代理或直接加载 - 启用流式加载
                 const loadingTask = pdfjsLib.getDocument({
                     url: fileUrl,
                     cMapUrl: `https://cdn.bootcdn.net/ajax/libs/pdf.js/${PDF_JS_VERSION}/cmaps/`,
@@ -222,17 +236,56 @@
                     renderInteractiveForms: true,
                     enableScripting: true,
                     textLayerMode: 1,
+                    // 启用流式加载，优先加载前几页
+                    useOnlyCssZoom: true,
+                    useCssTransitions: false,
                     // 添加进度回调
-                    progressCallback: ({ loaded, total }) => {
+                    progressCallback: (progressData) => {
+                        console.log('进度回调:', progressData);
+                        hasRealProgress = true;
+                        
+                        // 兼容不同版本的PDF.js进度回调格式
+                        let loaded = 0;
+                        let total = 1;
+                        
+                        if (progressData.loaded !== undefined && progressData.total !== undefined) {
+                            // 新格式 { loaded, total }
+                            loaded = progressData.loaded;
+                            total = progressData.total;
+                        } else if (progressData.loadedBytes !== undefined && progressData.totalBytes !== undefined) {
+                            // 旧格式 { loadedBytes, totalBytes }
+                            loaded = progressData.loadedBytes;
+                            total = progressData.totalBytes;
+                        } else if (typeof progressData === 'number') {
+                            // 数值格式 (0-1)
+                            loaded = progressData;
+                            total = 1;
+                        }
+                        
                         if (total > 0) {
                             const progress = Math.round((loaded / total) * 100);
+                            console.log('计算进度:', progress);
                             progressBar.style.width = `${progress}%`;
                             progressText.textContent = `加载中... ${progress}%`;
                         }
                     }
                 });
 
+                // 渐进式加载：先获取PDF对象，然后立即开始渲染前几页
                 const pdf = await loadingTask.promise;
+                
+                // 清除模拟进度
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                }
+                
+                // 快速完成进度条
+                progressBar.style.width = '100%';
+                progressText.textContent = '加载完成... 100%';
+                
+                // 短暂延迟，让用户看到完成状态
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
                 status.remove();
                 progressContainer.style.display = 'none';
                 progressText.style.display = 'none';
@@ -242,7 +295,7 @@
                 // 根据屏幕宽度调整缩放比例，避免拉伸
                 const containerWidth = Math.min(window.innerWidth - 40, 900);
                 
-                // 创建页面元素但不立即渲染
+                // 创建所有页面元素
                 const pageElements = [];
                 
                 for (let i = 1; i <= pdf.numPages; i++) {
@@ -252,10 +305,16 @@
                     const canvas = document.createElement('canvas');
                     pageDiv.appendChild(canvas);
                     container.appendChild(pageDiv);
-                    pageElements.push({ pageNum: i, element: pageDiv, canvas: canvas });
+                    pageElements.push({ pageNum: i, element: pageDiv, canvas: canvas, loaded: false });
                 }
                 
-                // 实现懒加载
+                // 优先渲染前3页，提升用户体验
+                const pagesToRenderFirst = Math.min(3, pdf.numPages);
+                for (let i = 0; i < pagesToRenderFirst; i++) {
+                    await renderPage(pdf, pageElements[i], containerWidth);
+                }
+                
+                // 为剩余页面实现懒加载
                 const observer = new IntersectionObserver((entries) => {
                     entries.forEach(async (entry) => {
                         if (entry.isIntersecting) {
@@ -271,18 +330,21 @@
                     threshold: 0.1
                 });
                 
-                // 观察所有页面元素
-                pageElements.forEach(el => observer.observe(el.element));
-                
-                // 立即渲染第一页
-                if (pageElements.length > 0) {
-                    await renderPage(pdf, pageElements[0], containerWidth);
-                }
+                // 只为未加载的页面添加观察
+                pageElements.slice(pagesToRenderFirst).forEach(el => {
+                    if (!el.loaded) {
+                        observer.observe(el.element);
+                    }
+                });
 
                 // 添加滚动监听，更新当前页码
                 window.addEventListener('scroll', () => updateCurrentPage(pdf.numPages));
                 window.addEventListener('resize', () => updateCurrentPage(pdf.numPages));
             } catch (e) {
+                // 清除模拟进度
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                }
                 status.textContent = '加载失败: ' + e.message;
                 status.className = 'error';
                 progressContainer.style.display = 'none';
