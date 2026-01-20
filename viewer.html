@@ -107,44 +107,6 @@
             font-size: 16px;
         }
         
-        /* 表格优化样式 */
-        .table-info {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            z-index: 100;
-            display: none;
-        }
-        
-        /* 文本选择优化 */
-        .textLayer {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            opacity: 0.2;
-            line-height: 1.0;
-        }
-        
-        .textLayer span {
-            color: transparent;
-            position: absolute;
-            white-space: pre;
-            cursor: text;
-            transform-origin: 0% 0%;
-        }
-        
-        .textLayer span::selection {
-            background: rgba(0, 0, 255, 0.3);
-        }
-        
         /* 加载进度条 */
         .progress-container {
             width: 80%;
@@ -200,37 +162,6 @@
             background: #4338ca;
         }
         
-        /* 缩放控制 */
-        .zoom-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 6px;
-            padding: 8px;
-            display: flex;
-            gap: 8px;
-            z-index: 100;
-        }
-        
-        .zoom-btn {
-            background: #444;
-            color: white;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .zoom-btn:hover {
-            background: #555;
-        }
-        
         @media (max-width: 768px) {
             .toolbar {
                 height: 36px;
@@ -251,19 +182,6 @@
                 margin-bottom: 15px;
                 border-radius: 6px;
             }
-            
-            .zoom-controls {
-                bottom: 10px;
-                left: 10px;
-                padding: 6px;
-            }
-            
-            .table-info {
-                bottom: 10px;
-                right: 10px;
-                font-size: 10px;
-                padding: 6px 8px;
-            }
         }
     </style>
 </head>
@@ -282,25 +200,11 @@
         </div>
         <div id="progress-text" class="progress-text" style="display: none;">加载中... 0%</div>
     </div>
-    
-    <!-- 缩放控制 -->
-    <div class="zoom-controls">
-        <button class="zoom-btn" onclick="zoomOut()">-</button>
-        <button class="zoom-btn" onclick="resetZoom()">100%</button>
-        <button class="zoom-btn" onclick="zoomIn()">+</button>
-    </div>
-    
-    <!-- 表格信息提示 -->
-    <div class="table-info" id="tableInfo">
-        表格内容可选中复制，如需提取数据请使用专业工具
-    </div>
 
     <script>
         // 全局变量
         let pdfjsLib = null;
         let pdfLoadingTask = null;
-        let currentScale = 1.0;
-        let currentPDF = null;
         
         // 检查PDF.js库是否加载成功
         function checkPDFJSLoaded() {
@@ -317,11 +221,11 @@
                 if (pdfjsLib.GlobalWorkerOptions) {
                     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                     
-                    // 设置CMap资源路径（必须使用正确的路径格式）
+                    // 设置CMap资源路径
                     pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/';
                     pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
                     
-                    // 启用更多特性以支持复杂文档
+                    // 确保字体正确加载
                     pdfjsLib.GlobalWorkerOptions.disableFontFace = false;
                     pdfjsLib.GlobalWorkerOptions.standardFontDataUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/';
                 }
@@ -333,51 +237,6 @@
             }
         }
         
-        // 备选方案：动态创建script标签加载PDF.js
-        function loadPDFJSFallback() {
-            return new Promise((resolve, reject) => {
-                // 检查是否已经加载
-                if (checkPDFJSLoaded()) {
-                    resolve();
-                    return;
-                }
-                
-                // 创建script标签加载PDF.js
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
-                script.onload = () => {
-                    setTimeout(() => {
-                        if (checkPDFJSLoaded()) {
-                            console.log('PDF.js库通过备选方案加载成功');
-                            pdfjsLib = window.pdfjsLib;
-                            
-                            // 加载worker
-                            const workerScript = document.createElement('script');
-                            workerScript.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-                            document.head.appendChild(workerScript);
-                            
-                            // 设置配置
-                            if (pdfjsLib.GlobalWorkerOptions) {
-                                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-                                pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
-                                pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
-                                pdfjsLib.GlobalWorkerOptions.disableFontFace = false;
-                            }
-                            
-                            resolve();
-                        } else {
-                            reject(new Error('PDF.js库加载失败'));
-                        }
-                    }, 100);
-                };
-                script.onerror = () => {
-                    reject(new Error('无法加载PDF.js库'));
-                };
-                
-                document.head.appendChild(script);
-            });
-        }
-        
         // 初始化函数
         async function init() {
             const status = document.getElementById('status');
@@ -387,7 +246,9 @@
                 if (!initPDFJS()) {
                     // 如果失败，尝试备选方案
                     status.textContent = '正在加载PDF渲染引擎...';
-                    await loadPDFJSFallback();
+                    // 简单重试
+                    setTimeout(() => location.reload(), 2000);
+                    return;
                 }
                 
                 console.log('PDF.js初始化成功，版本:', pdfjsLib.version);
@@ -415,20 +276,20 @@
         // 开始PDF查看器
         async function startPDFViewer() {
             const params = new URLSearchParams(location.search);
-            const fileUrl = params.get('file');
+            const fileParam = params.get('file');
             
-            if (!fileUrl) {
+            if (!fileParam) {
                 document.getElementById('status').textContent = '未找到文件参数';
                 document.getElementById('status').className = 'error';
                 return;
             }
             
-            // 解码URL参数
-            const decodedFileUrl = decodeURIComponent(fileUrl);
-            const fileName = decodedFileUrl.split('/').pop() || '文件';
+            // 文件参数可能已经编码，确保正确解析
+            const fileUrl = decodeURIComponent(fileParam);
+            const fileName = fileUrl.split('/').pop() || '文件';
             document.getElementById('title').textContent = 'PDF 预览 - ' + (fileName.length > 30 ? fileName.substring(0, 30) + '...' : fileName);
             
-            await renderPDF(decodedFileUrl);
+            await renderPDF(fileUrl);
         }
         
         async function renderPDF(fileUrl) {
@@ -466,12 +327,7 @@
                     enableFontFace: true,
                     disableFontFace: false,
                     useSystemFonts: false,
-                    isEvalSupported: true,
-                    disableAutoFetch: false,
-                    disableStream: false,
-                    disableRange: false,
-                    verbosity: pdfjsLib.VerbosityLevel.INFOS,
-                    standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+                    standardFontDataUrl: pdfjsLib.GlobalWorkerOptions.standardFontDataUrl,
                     progressCallback: (progressData) => {
                         if (progressData.total > 0) {
                             const progress = Math.round((progressData.loaded / progressData.total) * 100);
@@ -483,7 +339,6 @@
                 });
                 
                 const pdf = await pdfLoadingTask.promise;
-                currentPDF = pdf;
                 console.log('PDF加载成功，总页数:', pdf.numPages);
                 
                 if (progressInterval) clearInterval(progressInterval);
@@ -501,14 +356,61 @@
                 // 更新页面信息
                 document.getElementById('pageInfo').textContent = `1 / ${pdf.numPages}`;
                 
-                // 渲染所有页面
-                await renderAllPages(pdf);
+                // 计算容器宽度
+                const containerWidth = Math.min(window.innerWidth - 40, 900);
                 
-                // 显示表格提示信息
-                document.getElementById('tableInfo').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('tableInfo').style.display = 'none';
-                }, 5000);
+                // 创建页面元素数组
+                const pageElements = [];
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'page-container';
+                    pageDiv.dataset.page = i;
+                    
+                    const canvas = document.createElement('canvas');
+                    pageDiv.appendChild(canvas);
+                    
+                    container.appendChild(pageDiv);
+                    pageElements.push({ 
+                        pageNum: i, 
+                        element: pageDiv, 
+                        canvas: canvas, 
+                        loaded: false 
+                    });
+                }
+                
+                // 立即渲染前几页
+                const pagesToRenderFirst = Math.min(3, pdf.numPages);
+                console.log(`立即渲染前 ${pagesToRenderFirst} 页`);
+                
+                for (let i = 0; i < pagesToRenderFirst; i++) {
+                    await renderPage(pdf, pageElements[i], containerWidth);
+                }
+                
+                // 设置懒加载观察器
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(async (entry) => {
+                        if (entry.isIntersecting) {
+                            const pageElement = pageElements.find(el => el.element === entry.target);
+                            if (pageElement && !pageElement.loaded) {
+                                observer.unobserve(entry.target);
+                                console.log(`懒加载页面 ${pageElement.pageNum}`);
+                                await renderPage(pdf, pageElement, containerWidth);
+                            }
+                        }
+                    });
+                }, { 
+                    rootMargin: '200px 0px', 
+                    threshold: 0.1 
+                });
+                
+                // 观察剩余页面
+                pageElements.slice(pagesToRenderFirst).forEach(el => {
+                    if (!el.loaded) observer.observe(el.element);
+                });
+                
+                // 监听滚动和窗口大小变化，更新当前页码
+                window.addEventListener('scroll', () => updateCurrentPage(pdf.numPages));
+                window.addEventListener('resize', () => updateCurrentPage(pdf.numPages));
                 
             } catch (e) {
                 console.error('PDF加载失败:', e);
@@ -532,64 +434,9 @@
             }
         }
         
-        async function renderAllPages(pdf) {
-            const container = document.getElementById('viewerContainer');
-            container.innerHTML = '';
-            
-            const containerWidth = Math.min(window.innerWidth - 40, 900);
-            
-            // 创建所有页面元素
-            const pageElements = [];
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const pageDiv = document.createElement('div');
-                pageDiv.className = 'page-container';
-                pageDiv.dataset.page = i;
-                pageDiv.style.transform = `scale(${currentScale})`;
-                pageDiv.style.transformOrigin = 'top left';
-                
-                // 创建Canvas层
-                const canvas = document.createElement('canvas');
-                pageDiv.appendChild(canvas);
-                
-                // 创建文本层（用于文本选择和复制）
-                const textLayerDiv = document.createElement('div');
-                textLayerDiv.className = 'textLayer';
-                pageDiv.appendChild(textLayerDiv);
-                
-                container.appendChild(pageDiv);
-                pageElements.push({ 
-                    pageNum: i, 
-                    element: pageDiv, 
-                    canvas: canvas, 
-                    textLayer: textLayerDiv,
-                    loaded: false 
-                });
-            }
-            
-            // 渲染所有页面（使用Promise.all提高速度）
-            const renderPromises = [];
-            for (let i = 0; i < pdf.numPages; i++) {
-                renderPromises.push(renderPageWithTextLayer(pdf, pageElements[i], containerWidth));
-            }
-            
-            // 分批渲染，避免一次性渲染太多页面导致卡顿
-            const batchSize = 3;
-            for (let i = 0; i < renderPromises.length; i += batchSize) {
-                const batch = renderPromises.slice(i, i + batchSize);
-                await Promise.all(batch);
-                
-                // 每批渲染后更新一下页面信息
-                updateCurrentPage(pdf.numPages);
-            }
-            
-            // 监听滚动和窗口大小变化，更新当前页码
-            window.addEventListener('scroll', () => updateCurrentPage(pdf.numPages));
-            window.addEventListener('resize', () => updateCurrentPage(pdf.numPages));
-        }
-        
-        async function renderPageWithTextLayer(pdf, pageElement, containerWidth) {
+        async function renderPage(pdf, pageElement, containerWidth) {
             try {
-                const { pageNum, element, canvas, textLayer } = pageElement;
+                const { pageNum, element, canvas } = pageElement;
                 
                 console.log(`开始渲染页面 ${pageNum}`);
                 const page = await pdf.getPage(pageNum);
@@ -597,7 +444,7 @@
                 // 计算设备像素比和缩放比例
                 const devicePixelRatio = window.devicePixelRatio || 1;
                 const baseScale = containerWidth / page.getViewport({ scale: 1 }).width;
-                const outputScale = baseScale * devicePixelRatio * currentScale;
+                const outputScale = baseScale * devicePixelRatio;
                 
                 // 获取视口
                 const viewport = page.getViewport({ scale: outputScale });
@@ -608,138 +455,40 @@
                 canvas.height = Math.floor(viewport.height);
                 
                 // 设置Canvas显示尺寸
-                canvas.style.width = `${containerWidth * currentScale}px`;
+                canvas.style.width = `${containerWidth}px`;
                 canvas.style.height = `${viewport.height / devicePixelRatio}px`;
                 
-                // 设置文本层尺寸
-                textLayer.style.width = `${containerWidth * currentScale}px`;
-                textLayer.style.height = `${viewport.height / devicePixelRatio}px`;
+                // 设置Canvas样式，确保清晰度
+                canvas.style.imageRendering = 'auto';
                 
-                // 渲染页面到Canvas
+                // 渲染页面
                 const renderParams = {
                     canvasContext: context,
                     viewport: viewport,
                     enableWebGL: false,
                     renderInteractiveForms: true,
-                    intent: 'display',
-                    includeAnnotationStorage: true,
-                    annotationMode: pdfjsLib.AnnotationMode.ENABLE_FORMS
+                    intent: 'display'
                 };
                 
                 console.log(`渲染页面 ${pageNum}，尺寸: ${canvas.width}x${canvas.height}`);
                 await page.render(renderParams).promise;
                 
-                // 获取文本内容并创建文本层（用于文本选择和复制）
-                try {
-                    const textContent = await page.getTextContent();
-                    await pdfjsLib.renderTextLayer({
-                        textContent: textContent,
-                        container: textLayer,
-                        viewport: viewport,
-                        textDivs: []
-                    }).promise;
-                    
-                    console.log(`页面 ${pageNum} 文本层创建成功`);
-                } catch (textError) {
-                    console.warn(`页面 ${pageNum} 文本层创建失败:`, textError);
-                }
-                
                 // 标记页面已加载
                 pageElement.loaded = true;
                 element.classList.add('loaded');
+                
+                // 更新当前页码
+                updateCurrentPage(pdf.numPages);
                 
                 console.log(`页面 ${pageNum} 渲染完成`);
                 
             } catch (e) {
                 console.error(`渲染页面 ${pageElement.pageNum} 失败:`, e);
                 
-                // 在Canvas上显示错误信息
-                const { canvas } = pageElement;
-                const context = canvas.getContext('2d');
-                
-                // 设置Canvas尺寸
-                canvas.width = 800;
-                canvas.height = 200;
-                canvas.style.width = `${containerWidth}px`;
-                canvas.style.height = '200px';
-                
-                // 绘制错误背景
-                context.fillStyle = '#f8f9fa';
-                context.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // 绘制错误信息
-                context.fillStyle = '#dc3545';
-                context.font = 'bold 16px Arial';
-                context.textAlign = 'center';
-                context.fillText(`页面 ${pageElement.pageNum} 渲染失败`, canvas.width / 2, 80);
-                
-                context.fillStyle = '#666';
-                context.font = '14px Arial';
-                context.fillText(e.message || '未知错误', canvas.width / 2, 110);
-                
                 // 标记为已加载（尽管失败）
                 pageElement.loaded = true;
                 element.classList.add('loaded');
             }
-        }
-        
-        // 缩放功能
-        function zoomIn() {
-            currentScale = Math.min(currentScale * 1.2, 3.0);
-            applyZoom();
-        }
-        
-        function zoomOut() {
-            currentScale = Math.max(currentScale / 1.2, 0.3);
-            applyZoom();
-        }
-        
-        function resetZoom() {
-            currentScale = 1.0;
-            applyZoom();
-        }
-        
-        async function applyZoom() {
-            if (!currentPDF) return;
-            
-            const container = document.getElementById('viewerContainer');
-            const pageContainers = container.querySelectorAll('.page-container');
-            
-            // 获取当前滚动位置
-            const scrollTop = window.pageYOffset;
-            
-            // 应用缩放
-            pageContainers.forEach(container => {
-                container.style.transform = `scale(${currentScale})`;
-                container.style.transformOrigin = 'top left';
-                
-                // 调整子元素大小
-                const canvas = container.querySelector('canvas');
-                const textLayer = container.querySelector('.textLayer');
-                
-                if (canvas && canvas.style.width) {
-                    const originalWidth = parseFloat(canvas.style.width) / (currentScale / 1.0);
-                    canvas.style.width = `${originalWidth * currentScale}px`;
-                    
-                    const originalHeight = parseFloat(canvas.style.height) / (currentScale / 1.0);
-                    canvas.style.height = `${originalHeight * currentScale}px`;
-                }
-                
-                if (textLayer) {
-                    const originalWidth = parseFloat(textLayer.style.width) / (currentScale / 1.0);
-                    textLayer.style.width = `${originalWidth * currentScale}px`;
-                    
-                    const originalHeight = parseFloat(textLayer.style.height) / (currentScale / 1.0);
-                    textLayer.style.height = `${originalHeight * currentScale}px`;
-                }
-            });
-            
-            // 保持滚动位置相对不变
-            setTimeout(() => {
-                window.scrollTo(0, scrollTop * currentScale);
-            }, 10);
-            
-            console.log(`缩放级别: ${Math.round(currentScale * 100)}%`);
         }
         
         function updateCurrentPage(totalPages) {
@@ -761,22 +510,6 @@
             // 更新页面信息
             document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
         }
-        
-        // 监听文本选择事件，显示表格提示
-        document.addEventListener('mouseup', () => {
-            const selection = window.getSelection();
-            if (selection && selection.toString().trim().length > 0) {
-                // 如果选择了文本，显示表格提示
-                const tableInfo = document.getElementById('tableInfo');
-                tableInfo.textContent = `已选择 ${selection.toString().length} 个字符`;
-                tableInfo.style.display = 'block';
-                
-                // 3秒后隐藏
-                setTimeout(() => {
-                    tableInfo.style.display = 'none';
-                }, 3000);
-            }
-        });
         
         // 页面加载完成后初始化
         if (document.readyState === 'loading') {
