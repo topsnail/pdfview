@@ -3,42 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PDF 库 | R2 存储版</title>
+    <title>我的 PDF 智库</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="login-container" class="auth-card" style="display: none;">
-        <h2>身份验证</h2>
-        <input type="password" id="pw-input" placeholder="输入管理密码..." onkeyup="if(event.keyCode===13) handleLogin()">
-        <button onclick="handleLogin()" class="btn-primary" style="width:100%">进入系统</button>
+    <div id="login-container" class="auth-wrapper" style="display: none;">
+        <div class="auth-card">
+            <div class="auth-icon"><i class="fas fa-unlock-alt"></i></div>
+            <h2>身份验证</h2>
+            <p>请输入管理密码以访问库</p>
+            <input type="password" id="pw-input" placeholder="••••••••" onkeyup="if(event.keyCode===13) handleLogin()">
+            <button onclick="handleLogin()" class="btn-primary">进入系统</button>
+        </div>
     </div>
 
     <div id="main-content" class="container" style="display: none;">
         <header class="main-header">
-            <h1>📄 PDF 库</h1>
-            <div class="header-tools">
-                <input type="text" id="searchInput" placeholder="搜索或 #标签..." oninput="renderFileList()">
-                <button onclick="logout()" class="btn-sm">退出</button>
+            <div class="logo">
+                <i class="fas fa-file-pdf"></i>
+                <h1>PDF <span>Archive</span></h1>
             </div>
+            <button onclick="logout()" class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
         </header>
 
-        <section class="add-section">
-            <div class="input-grid-v2">
-                <div class="row">
-                    <input type="text" id="fileName" placeholder="文件显示名称">
-                    <input type="text" id="fileTags" placeholder="标签 (英文逗号分隔)">
-                </div>
-                <div class="row">
-                    <input type="file" id="fileInput" accept=".pdf" style="flex:1;">
-                    <button id="addBtn" onclick="addFile()" class="btn-primary">上传并添加</button>
+        <div class="search-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索标题或使用 #标签..." oninput="renderFileList()">
+        </div>
+
+        <section class="upload-box">
+            <h3><i class="fas fa-cloud-upload-alt"></i> 新增文件</h3>
+            <div class="form-grid">
+                <input type="text" id="fileName" placeholder="给文件取个名字...">
+                <input type="text" id="fileTags" placeholder="标签 (用逗号分隔，如：学习, 工作)">
+                <div class="file-select-group">
+                    <label for="fileInput" class="custom-file-upload">
+                        <i class="fas fa-paperclip"></i> <span id="file-name-display">选择 PDF 文件</span>
+                    </label>
+                    <input type="file" id="fileInput" accept=".pdf" onchange="updateFileNameDisplay()">
+                    <button id="addBtn" onclick="addFile()" class="btn-upload">开始上传</button>
                 </div>
             </div>
         </section>
 
-        <section class="list-section">
-            <ul id="fileList"></ul>
+        <section class="list-container">
+            <div class="list-header">
+                <span>全部文件</span>
+                <span id="file-count" class="badge">0</span>
+            </div>
+            <ul id="fileList" class="pdf-grid"></ul>
         </section>
     </div>
+
     <div id="toast" class="toast"></div>
     <script src="script.js"></script>
 </body>
