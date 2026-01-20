@@ -180,7 +180,6 @@ function toggleSelect(id) {
     if (id !== undefined) {
         selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id);
     }
-    document.getElementById('batch-bar').style.display = selectedIds.size > 0 ? 'flex' : 'none';
     document.getElementById('batch-count').textContent = `已选 ${selectedIds.size} 项`;
 }
 
@@ -277,7 +276,6 @@ function toggleSelectAll() {
         }
     });
     
-    document.getElementById('batch-bar').style.display = selectedIds.size > 0 ? 'flex' : 'none';
     document.getElementById('batch-count').textContent = `已选 ${selectedIds.size} 项`;
 }
 

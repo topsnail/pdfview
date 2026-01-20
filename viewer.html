@@ -184,8 +184,19 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
     <script>
-        const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+        // 确保PDF.js库正确加载
+        let pdfjsLib;
+        if (window.pdfjsLib) {
+            pdfjsLib = window.pdfjsLib;
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+        } else if (window['pdfjs-dist']) {
+            pdfjsLib = window['pdfjs-dist'];
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+        } else {
+            console.error('PDF.js库未正确加载');
+            document.getElementById('status').textContent = 'PDF.js库加载失败';
+            document.getElementById('status').className = 'error';
+        }
 
         const params = new URLSearchParams(location.search);
         const fileUrl = params.get('file');
