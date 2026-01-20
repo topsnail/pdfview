@@ -5,21 +5,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF 预览</title>
     <style>
-        body { margin: 0; background: #525659; font-family: sans-serif; }
-        .toolbar { position: fixed; top: 0; width: 100%; height: 48px; background: #323639; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; box-sizing: border-box; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
-        #viewerContainer { margin-top: 48px; display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
-        .page-container { background: white; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        canvas { display: block; max-width: 100%; height: auto; }
-        .loading { color: #ccc; text-align: center; margin-top: 100px; }
-        .btn { background: #4a4d51; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            background: #f0f0f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: #333;
+        }
+        
+        .toolbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 60px;
+            background: #ffffff;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .toolbar h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .toolbar-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .page-info {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .btn {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #e8e8e8;
+        }
+        
+        #viewerContainer {
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+        }
+        
+        .page-container {
+            background: white;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .loading {
+            color: #666;
+            text-align: center;
+            margin-top: 100px;
+            font-size: 16px;
+        }
+        
+        .error {
+            color: #ff4757;
+            text-align: center;
+            margin-top: 100px;
+            font-size: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                height: 56px;
+                padding: 0 16px;
+            }
+            
+            .toolbar h1 {
+                font-size: 16px;
+            }
+            
+            #viewerContainer {
+                margin-top: 56px;
+                min-height: calc(100vh - 56px);
+                padding: 20px 15px;
+            }
+            
+            .page-container {
+                margin-bottom: 15px;
+                border-radius: 6px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <div id="title">加载中...</div>
-        <div>
-            <span id="pageInfo">0 / 0</span>
-            <button class="btn" style="margin-left:10px" onclick="location.reload()">刷新</button>
+        <h1 id="title">加载中...</h1>
+        <div class="toolbar-controls">
+            <span class="page-info" id="pageInfo">0 / 0</span>
+            <button class="btn" onclick="location.reload()">刷新</button>
         </div>
     </div>
     <div id="viewerContainer">
@@ -36,6 +150,7 @@
 
         if (!fileUrl) {
             document.getElementById('status').textContent = '未找到文件参数';
+            document.getElementById('status').className = 'error';
         } else {
             renderPDF();
         }
@@ -50,6 +165,7 @@
                     url: fileUrl,
                     cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
                     cMapPacked: true,
+                    enableXfa: true,
                 });
 
                 const pdf = await loadingTask.promise;
@@ -57,24 +173,38 @@
                 document.getElementById('title').textContent = 'PDF 预览';
                 document.getElementById('pageInfo').textContent = `共 ${pdf.numPages} 页`;
 
+                // 根据屏幕宽度和DPI调整缩放比例
+                const scale = window.devicePixelRatio > 1 ? 2.0 : 1.8;
+
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 1.5 });
+                    const viewport = page.getViewport({ scale: scale });
                     
                     const pageDiv = document.createElement('div');
                     pageDiv.className = 'page-container';
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
+                    
+                    // 提高清晰度
+                    const deviceScaleFactor = window.devicePixelRatio || 1;
+                    canvas.height = viewport.height * deviceScaleFactor;
+                    canvas.width = viewport.width * deviceScaleFactor;
+                    canvas.style.height = viewport.height + 'px';
+                    canvas.style.width = viewport.width + 'px';
+                    context.scale(deviceScaleFactor, deviceScaleFactor);
 
                     pageDiv.appendChild(canvas);
                     container.appendChild(pageDiv);
 
-                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    await page.render({ 
+                        canvasContext: context, 
+                        viewport: viewport,
+                        enhanceTextSelection: true
+                    }).promise;
                 }
             } catch (e) {
                 status.textContent = '加载失败: ' + e.message;
+                status.className = 'error';
                 console.error(e);
             }
         }
