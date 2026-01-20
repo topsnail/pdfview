@@ -183,21 +183,21 @@
     </div>
 
     <script>
-        // 使用本地PDF.js库
+        // 使用国内CDN的PDF.js库
         let pdfjsLib;
         
         // 立即开始初始化
         async function initPDFJS() {
             try {
-                // 动态导入PDF.js核心库
-                const module = await import('./pdfjs/pdf.mjs');
+                // 动态导入PDF.js核心库（使用国内Gcore镜像）
+                const module = await import('https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.mjs');
                 pdfjsLib = module.default;
                 
-                // 设置Worker路径
-                pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.mjs';
+                // 设置Worker路径（使用国内Gcore镜像）
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.worker.mjs';
                 
-                // 设置CMap资源路径
-                pdfjsLib.GlobalWorkerOptions.cMapUrl = './pdfjs/cmaps/';
+                // 设置CMap资源路径（使用国内Gcore镜像）
+                pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/';
                 pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
                 
                 console.log('PDF.js库加载成功');
