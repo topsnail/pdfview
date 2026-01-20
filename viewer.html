@@ -139,10 +139,10 @@
         <div id="status" class="loading">正在准备渲染引擎...</div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
         const params = new URLSearchParams(location.search);
         const fileUrl = params.get('file');
@@ -162,21 +162,13 @@
                 // 使用跨域代理或直接加载
                 const loadingTask = pdfjsLib.getDocument({
                     url: fileUrl,
-                    // 1. 确保 cMap 路径正确且能访问
-                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/cmaps/',
                     cMapPacked: true,
-                    
-                    // 2. 关键：必须设为 false，允许加载 PDF 内部字体
+                    // 添加下面这一行
+                    standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/standard_fonts/',
                     disableFontFace: false,
-                    
-                    // 3. 增强兼容性配置
                     enableXfa: true,
                     renderInteractiveForms: true,
-                    
-                    // 4. 调试建议：暂时关闭忽略字体错误，以便在控制台看到具体的报错
-                    ignoreFontErrors: false,
-                    
-                    // 其他重要配置
                     enableScripting: true,
                     textLayerMode: 1,
                 });
