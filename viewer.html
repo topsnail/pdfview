@@ -159,7 +159,7 @@
                 padding: 15px 10px;
             }
             
-            .page-container {
+            。page-container {
                 margin-bottom: 15px;
                 border-radius: 6px;
             }
@@ -183,28 +183,28 @@
     </div>
 
     <script>
-        // 使用国内CDN的PDF.js库
+        // 使用 cdnjs 的 PDF.js 库
         let pdfjsLib;
         
         // 立即开始初始化
         async function initPDFJS() {
             try {
-                // 动态导入PDF.js核心库（使用国内Gcore镜像）
-                const module = await import('https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.mjs');
+                // 动态导入PDF.js核心库
+                const module = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.mjs');
                 pdfjsLib = module.default;
                 
-                // 设置Worker路径（使用国内Gcore镜像）
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.worker.mjs';
+                // 设置Worker路径
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.mjs';
                 
-                // 设置CMap资源路径（使用国内Gcore镜像）
-                pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/';
+                // 设置CMap资源路径
+                const CMAP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/cmaps/';
+                pdfjsLib.GlobalWorkerOptions.cMapUrl = CMAP_URL;
                 pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
                 
-                console.log('PDF.js库加载成功');
-                
+                console.log('PDF.js 库加载成功');
                 return pdfjsLib;
             } catch (error) {
-                console.error('PDF.js库加载失败:', error);
+                console.error('PDF.js 库加载失败:', error);
                 throw error;
             }
         }
@@ -214,8 +214,7 @@
             pdfjsLib = lib;
             init();
         }).catch(error => {
-            console.error('PDF.js库加载失败:', error);
-            document.getElementById('status').textContent = 'PDF.js库加载失败';
+            document.getElementById('status').textContent = 'PDF.js 库加载失败';
             document.getElementById('status').className = 'error';
         });
 
@@ -227,7 +226,7 @@
                 document.getElementById('status').textContent = '未找到文件参数';
                 document.getElementById('status').className = 'error';
             } else if (typeof pdfjsLib === 'undefined') {
-                document.getElementById('status').textContent = 'PDF.js库未加载，无法渲染PDF';
+                document.getElementById('status').textContent = 'PDF.js 库未加载，无法渲染PDF';
                 document.getElementById('status').className = 'error';
             } else {
                 renderPDF(fileUrl);
@@ -241,7 +240,6 @@
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
             
-            let simulatedProgress = 0;
             let progressInterval;
             
             try {
@@ -249,6 +247,7 @@
                 progressContainer.style.display = 'block';
                 progressText.style.display = 'block';
                 
+                let simulatedProgress = 0;
                 progressInterval = setInterval(() => {
                     if (simulatedProgress < 80) {
                         simulatedProgress += 5;
@@ -259,8 +258,6 @@
                 
                 const loadingTask = pdfjsLib.getDocument({
                     url: fileUrl,
-                    cMapUrl: 'https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/',
-                    cMapPacked: true,
                     enableXfa: true,
                     progressCallback: (progressData) => {
                         if (progressData.total > 0) {
@@ -335,30 +332,25 @@
         async function renderPage(pdf, pageElement, containerWidth) {
             try {
                 const { pageNum, element, canvas } = pageElement;
-                
                 const page = await pdf.getPage(pageNum);
                 
-                // 1. 设置设备像素比和缩放
                 const devicePixelRatio = window.devicePixelRatio || 1;
+                const backingStoreRatio = canvas.getContext('2d').webkitBackingStorePixelRatio || 1;
+                const ratio = devicePixelRatio / backingStoreRatio;
+
                 const baseScale = containerWidth / page.getViewport({ scale: 1 }).width;
-                const outputScale = baseScale * devicePixelRatio;
+                const viewport = page.getViewport({ scale: baseScale * ratio });
 
-                // 2. 获取高分辨率的视口
-                const viewport = page.getViewport({ scale: outputScale });
-
-                // 3. 设置Canvas物理尺寸
                 const context = canvas.getContext('2d');
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
-                
-                // 4. 设置Canvas的CSS显示尺寸，保持正确的宽高比
                 canvas.style.width = `${containerWidth}px`;
-                canvas.style.height = `${viewport.height / devicePixelRatio}px`;
+                canvas.style.height = `${viewport.height / ratio}px`;
+                context.scale(ratio, ratio);
 
-                // 5. 渲染页面
                 const renderParams = {
                     canvasContext: context,
-                    viewport: viewport,
+                    viewport: page.getViewport({ scale: baseScale }),
                     enhanceTextSelection: true,
                     renderInteractiveForms: true
                 };
