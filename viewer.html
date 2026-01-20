@@ -231,14 +231,21 @@
                     cMapUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDF_JS_VERSION}/cmaps/`,
                     cMapPacked: true,
                     standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDF_JS_VERSION}/standard_fonts/`,
-                    disableFontFace: false,
+                    disableFontFace: true, // 禁用字体加载可能解决某些字体问题
                     enableXfa: true,
                     renderInteractiveForms: true,
                     enableScripting: true,
-                    textLayerMode: 1,
-                    // 启用流式加载，优先加载前几页
+                    textLayerMode: 2, // 启用文本层
                     useOnlyCssZoom: true,
                     useCssTransitions: false,
+                    // 增加内存限制以处理复杂PDF
+                    maxCanvasPixels: 4096 * 4096,
+                    // 确保字体处理正确
+                    forceFontFace: false,
+                    // 启用所有功能以确保兼容性
+                    enableXfa: true,
+                    renderInteractiveForms: true,
+                    enableScripting: true,
                     // 添加进度回调
                     progressCallback: (progressData) => {
                         console.log('进度回调:', progressData);
