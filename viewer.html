@@ -2,162 +2,390 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF 预览</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #f0f0f0; font-family: sans-serif; color: #333; overflow-x: hidden; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            background: #f0f0f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: #333;
+        }
+        
         .toolbar {
-            position: fixed; top: 0; width: 100%; height: 44px;
-            background: #333; color: #fff; display: flex;
-            align-items: center; justify-content: space-between;
-            padding: 0 16px; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 40px;
+            background: #333333;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            box-sizing: border-box;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        .toolbar h1 { font-size: 14px; font-weight: 600; }
-        .page-info { font-size: 12px; color: #ccc; }
+        
+        .toolbar h1 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .toolbar-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .page-info {
+            font-size: 13px;
+            color: #cccccc;
+        }
+        
         .btn {
-            background: #444; color: #fff; border: 1px solid #555;
-            padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+            background: #444444;
+            color: #ffffff;
+            border: 1px solid #555555;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
+        
+        .btn:hover {
+            background: #555555;
+        }
+        
         #viewerContainer {
-            margin-top: 44px; display: flex; flex-direction: column;
-            align-items: center; padding: 15px; width: 100%;
+            margin-top: 40px;
+            min-height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 15px;
         }
+        
         .page-container {
-            background: white; margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            width: 100%; max-width: 900px;
-            opacity: 0; transform: translateY(10px);
-            transition: opacity 0.4s ease, transform 0.4s ease;
+            background: white;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
         }
-        .page-container.loaded { opacity: 1; transform: translateY(0); }
-        canvas { display: block; width: 100%; height: auto; }
-        .loading, .error { text-align: center; margin-top: 50px; font-size: 14px; }
-        .error { color: #ff4757; }
-        .progress-bar-container {
-            width: 200px; height: 4px; background: #eee;
-            margin: 10px auto; border-radius: 2px; overflow: hidden;
+        
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
         }
-        .progress-fill { height: 100%; background: #59ea56; width: 0%; transition: width 0.2s; }
+        
+        .loading {
+            color: #666;
+            text-align: center;
+            margin-top: 100px;
+            font-size: 16px;
+        }
+        
+        .error {
+            color: #ff4757;
+            text-align: center;
+            margin-top: 100px;
+            font-size: 16px;
+        }
+        
+        /* 加载进度条 */
+        .progress-container {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            height: 8px;
+            background-color: #c5eec5;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: #59ea56;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+        }
+        
+        /* 懒加载相关 */
+        .page-container {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .page-container.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                height: 36px;
+                padding: 0 12px;
+            }
+            
+            .toolbar h1 {
+                font-size: 14px;
+            }
+            
+            #viewerContainer {
+                margin-top: 36px;
+                min-height: calc(100vh - 36px);
+                padding: 15px 10px;
+            }
+            
+            .page-container {
+                margin-bottom: 15px;
+                border-radius: 6px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <h1 id="title">PDF 预览</h1>
+        <h1 id="title">加载中...</h1>
         <div class="toolbar-controls">
             <span class="page-info" id="pageInfo">0 / 0</span>
             <button class="btn" onclick="location.reload()">刷新</button>
         </div>
     </div>
     <div id="viewerContainer">
-        <div id="status-box">
-            <div id="status" class="loading">正在初始化引擎...</div>
-            <div class="progress-bar-container"><div id="progressFill" class="progress-fill"></div></div>
+        <div id="status" class="loading">正在准备渲染引擎...</div>
+        <div id="progress-container" class="progress-container" style="display: none;">
+            <div id="progress-bar" class="progress-bar"></div>
         </div>
+        <div id="progress-text" class="progress-text" style="display: none;">加载中... 0%</div>
     </div>
 
-    <script type="module">
-        // 锁定版本以确保 worker 和主库匹配
-        const PDFJS_VER = '4.0.379';
-        const CDN = `https://gcore.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VER}`;
+    <script>
+        // 使用国内CDN的PDF.js库
+        let pdfjsLib;
         
-        let pdfDoc = null;
-        const params = new URLSearchParams(location.search);
-        const fileUrl = params.get('file');
-
-        async function init() {
-            if (!fileUrl) {
-                showError('未找到文件参数');
-                return;
-            }
-
+        // 立即开始初始化
+        async function initPDFJS() {
             try {
-                // 加载核心库
-                const pdfjsLib = await import(`${CDN}/build/pdf.mjs`);
-                pdfjsLib.GlobalWorkerOptions.workerSrc = `${CDN}/build/pdf.worker.mjs`;
+                // 动态导入PDF.js核心库（使用国内Gcore镜像）
+                const module = await import('https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.mjs');
+                pdfjsLib = module.default;
+                
+                // 设置Worker路径（使用国内Gcore镜像）
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.worker.mjs';
+                
+                // 设置CMap资源路径（使用国内Gcore镜像）
+                pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/';
+                pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
+                
+                console.log('PDF.js库加载成功');
+                
+                return pdfjsLib;
+            } catch (error) {
+                console.error('PDF.js库加载失败:', error);
+                throw error;
+            }
+        }
+
+        // 立即初始化PDF.js库
+        initPDFJS().then(lib => {
+            pdfjsLib = lib;
+            init();
+        }).catch(error => {
+            console.error('PDF.js库加载失败:', error);
+            document.getElementById('status').textContent = 'PDF.js库加载失败';
+            document.getElementById('status').className = 'error';
+        });
+
+        function init() {
+            const params = new URLSearchParams(location.search);
+            const fileUrl = params.get('file');
+
+            if (!fileUrl) {
+                document.getElementById('status').textContent = '未找到文件参数';
+                document.getElementById('status').className = 'error';
+            } else if (typeof pdfjsLib === 'undefined') {
+                document.getElementById('status').textContent = 'PDF.js库未加载，无法渲染PDF';
+                document.getElementById('status').className = 'error';
+            } else {
+                renderPDF(fileUrl);
+            }
+        }
+
+        async function renderPDF(fileUrl) {
+            const container = document.getElementById('viewerContainer');
+            const status = document.getElementById('status');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            
+            let simulatedProgress = 0;
+            let progressInterval;
+            
+            try {
+                status.textContent = '正在加载PDF文件...';
+                progressContainer.style.display = 'block';
+                progressText.style.display = 'block';
+                
+                progressInterval = setInterval(() => {
+                    if (simulatedProgress < 80) {
+                        simulatedProgress += 5;
+                        progressBar.style.width = `${simulatedProgress}%`;
+                        progressText.textContent = `加载中... ${simulatedProgress}%`;
+                    }
+                }, 200);
                 
                 const loadingTask = pdfjsLib.getDocument({
                     url: fileUrl,
-                    cMapUrl: `${CDN}/cmaps/`,
+                    cMapUrl: 'https://gcore.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/',
                     cMapPacked: true,
+                    enableXfa: true,
+                    progressCallback: (progressData) => {
+                        if (progressData.total > 0) {
+                            const progress = Math.round((progressData.loaded / progressData.total) * 100);
+                            simulatedProgress = progress; // Update simulated progress with real progress
+                            progressBar.style.width = `${progress}%`;
+                            progressText.textContent = `加载中... ${progress}%`;
+                        }
+                    }
                 });
 
-                // 进度监听
-                loadingTask.onProgress = (p) => {
-                    const percent = (p.loaded / p.total) * 100;
-                    document.getElementById('progressFill').style.width = percent + '%';
-                    document.getElementById('status').textContent = `正在下载: ${Math.round(percent)}%`;
-                };
-
-                pdfDoc = await loadingTask.promise;
-                document.getElementById('status-box').remove();
-                document.getElementById('pageInfo').textContent = `1 / ${pdfDoc.numPages}`;
+                const pdf = await loadingTask.promise;
                 
-                renderAllPages();
+                if (progressInterval) clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressText.textContent = '加载完成... 100%';
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                status.remove();
+                progressContainer.style.display = 'none';
+                progressText.style.display = 'none';
+                document.getElementById('title').textContent = 'PDF 预览';
+                document.getElementById('pageInfo').textContent = `1 / ${pdf.numPages}`;
+
+                const containerWidth = Math.min(window.innerWidth - 40, 900);
+                
+                const pageElements = [];
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'page-container';
+                    pageDiv.dataset.page = i;
+                    const canvas = document.createElement('canvas');
+                    pageDiv.appendChild(canvas);
+                    container.appendChild(pageDiv);
+                    pageElements.push({ pageNum: i, element: pageDiv, canvas: canvas, loaded: false });
+                }
+                
+                const pagesToRenderFirst = Math.min(3, pdf.numPages);
+                for (let i = 0; i < pagesToRenderFirst; i++) {
+                    await renderPage(pdf, pageElements[i], containerWidth);
+                }
+                
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(async (entry) => {
+                        if (entry.isIntersecting) {
+                            const pageElement = pageElements.find(el => el.element === entry.target);
+                            if (pageElement && !pageElement.loaded) {
+                                observer.unobserve(entry.target);
+                                await renderPage(pdf, pageElement, containerWidth);
+                            }
+                        }
+                    });
+                }, { rootMargin: '200px 0px', threshold: 0.1 });
+                
+                pageElements.slice(pagesToRenderFirst).forEach(el => {
+                    if (!el.loaded) observer.observe(el.element);
+                });
+
+                window.addEventListener('scroll', () => updateCurrentPage(pdf.numPages));
+                window.addEventListener('resize', () => updateCurrentPage(pdf.numPages));
             } catch (e) {
-                console.error(e);
-                showError('加载失败: ' + e.message);
+                if (progressInterval) clearInterval(progressInterval);
+                status.textContent = '加载失败: ' + e.message;
+                status.className = 'error';
+                progressContainer.style.display = 'none';
+                progressText.style.display = 'none';
+                console.error('PDF加载失败:', e);
             }
         }
-
-        async function renderAllPages() {
-            const container = document.getElementById('viewerContainer');
-            for (let i = 1; i <= pdfDoc.numPages; i++) {
-                const pageDiv = document.createElement('div');
-                pageDiv.className = 'page-container';
-                const canvas = document.createElement('canvas');
-                pageDiv.appendChild(canvas);
-                container.appendChild(pageDiv);
+        
+        async function renderPage(pdf, pageElement, containerWidth) {
+            try {
+                const { pageNum, element, canvas } = pageElement;
                 
-                // 懒加载策略：首屏前两页立即渲染，其余滚动加载
-                if (i <= 2) {
-                    await renderPage(i, canvas, pageDiv);
-                } else {
-                    observePage(i, canvas, pageDiv);
-                }
+                const page = await pdf.getPage(pageNum);
+                
+                // 1. 设置设备像素比和缩放
+                const devicePixelRatio = window.devicePixelRatio || 1;
+                const baseScale = containerWidth / page.getViewport({ scale: 1 }).width;
+                const outputScale = baseScale * devicePixelRatio;
+
+                // 2. 获取高分辨率的视口
+                const viewport = page.getViewport({ scale: outputScale });
+
+                // 3. 设置Canvas物理尺寸
+                const context = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                // 4. 设置Canvas的CSS显示尺寸，保持正确的宽高比
+                canvas.style.width = `${containerWidth}px`;
+                canvas.style.height = `${viewport.height / devicePixelRatio}px`;
+
+                // 5. 渲染页面
+                const renderParams = {
+                    canvasContext: context,
+                    viewport: viewport,
+                    enhanceTextSelection: true,
+                    renderInteractiveForms: true
+                };
+                
+                await page.render(renderParams).promise;
+                
+                pageElement.loaded = true;
+                element.classList.add('loaded');
+                
+            } catch (e) {
+                console.error(`渲染页面失败: ${pageElement.pageNum}`, e);
             }
         }
 
-        async function renderPage(num, canvas, container) {
-            const page = await pdfDoc.getPage(num);
-            const viewport = page.getViewport({ scale: window.devicePixelRatio || 1.5 });
-            const ctx = canvas.getContext('2d');
+        function updateCurrentPage(totalPages) {
+            const pageContainers = document.querySelectorAll('.page-container');
+            let currentPage = 1;
             
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            await page.render({ canvasContext: ctx, viewport }).promise;
-            container.classList.add('loaded');
-        }
-
-        function observePage(num, canvas, container) {
-            const observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting) {
-                    renderPage(num, canvas, container);
-                    observer.unobserve(container);
-                }
-            }, { rootMargin: '400px' });
-            observer.observe(container);
-        }
-
-        function showError(msg) {
-            const status = document.getElementById('status');
-            status.textContent = msg;
-            status.className = 'error';
-        }
-
-        init();
-
-        // 滚动更新页码
-        window.addEventListener('scroll', () => {
-            const containers = document.querySelectorAll('.page-container');
-            containers.forEach((el, idx) => {
-                const rect = el.getBoundingClientRect();
-                if (rect.top >= 0 && rect.top <= window.innerHeight / 2) {
-                    document.getElementById('pageInfo').textContent = `${idx + 1} / ${pdfDoc.numPages}`;
+            pageContainers.forEach((container, index) => {
+                const rect = container.getBoundingClientRect();
+                if (rect.top < window.innerHeight * 0.2) {
+                    currentPage = index + 1;
                 }
             });
-        });
+            
+            document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+        }
     </script>
 </body>
 </html>
