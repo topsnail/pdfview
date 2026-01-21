@@ -110,7 +110,7 @@ function renderList(data) {
             <input type="checkbox" onchange="toggleSelect('${file.id}')" ${selectedIds.has(file.id) ? 'checked' : ''}>
             <div class="file-info">
                 <a href="viewer.html?file=${encodeURIComponent('/api/raw?id=' + file.id)}" target="_blank" class="file-title">${file.name}</a>
-                <div style="font-size:11px; color:#94a3b8">📅 ${file.date} | 📦 ${file.size ? formatFileSize(file.size) : '未知大小'} | 🏷️ ${file.tags.map(tag => `<span class="tag-item" onclick="searchByTag('${tag}')" style="cursor: pointer; color: var(--primary); text-decoration: underline; margin-right: 4px;">${tag}</span>`).join(', ')}</div>
+                <div style="font-size:11px; color:#94a3b8">📅 ${file.date} | 📦 ${file.size ? formatFileSize(file.size) : '未知大小'} | 🏷️ ${file.tags.map(tag => `<span class="tag-item" onclick="searchByTag('${tag}')" style="cursor: pointer; color: #94a3b8; text-decoration: underline; margin-right: 4px;">${tag}</span>`).join(', ')}</div>
             </div>
             <div class="file-actions">
                 ${currentTab === 'library' 

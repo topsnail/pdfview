@@ -77,6 +77,8 @@
             flex-direction: column;
             align-items: center;
             padding: 20px 15px;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .page-container {
@@ -87,6 +89,20 @@
             overflow: hidden;
             max-width: 900px;
             width: 100%;
+        }
+        
+        /* 手机端全屏宽度 */
+        @media (max-width: 768px) {
+            .page-container {
+                max-width: 100%;
+                border-radius: 0;
+                margin-bottom: 0;
+                box-shadow: none;
+            }
+            
+            #viewerContainer {
+                padding: 0;
+            }
         }
         
         canvas {
@@ -230,6 +246,9 @@
                     // 确保字体正确加载
                     pdfjsLib.GlobalWorkerOptions.disableFontFace = false;
                     pdfjsLib.GlobalWorkerOptions.standardFontDataUrl = './pdfjs-5.4.530/web/standard_fonts/';
+                    // 增强字体处理
+                    pdfjsLib.GlobalWorkerOptions.useOnlyCssFonts = false;
+                    pdfjsLib.GlobalWorkerOptions.forceHtml = false;
                 }
                 
                 return true;
@@ -288,8 +307,23 @@
             
             // 文件参数可能已经编码，确保正确解析
             const fileUrl = decodeURIComponent(fileParam);
-            const fileName = fileUrl.split('/').pop() || '文件';
-            document.getElementById('title').textContent = 'PDF 预览 - ' + (fileName.length > 30 ? fileName.substring(0, 30) + '...' : fileName);
+            // 提取友好的文件名，去除查询参数和路径
+            let fileName = '文件';
+            if (fileUrl) {
+                // 去除查询参数
+                const cleanUrl = fileUrl.split('?')[0];
+                // 提取文件名部分
+                fileName = cleanUrl.split('/').pop() || '文件';
+                // 如果文件名包含"raw"（来自/api/raw路径），使用更友好的名称
+                if (fileName === 'raw') {
+                    fileName = '文档';
+                }
+            }
+            document.getElementById('title').textContent = 'PDF 预览';
+            // 如果有有意义的文件名，添加到标题
+            if (fileName && fileName !== '文件' && fileName !== '文档') {
+                document.getElementById('title').textContent += ' - ' + (fileName.length > 30 ? fileName.substring(0, 30) + '...' : fileName);
+            }
             
             await renderPDF(fileUrl);
         }
@@ -328,8 +362,19 @@
                     enableXfa: true,
                     enableFontFace: true,
                     disableFontFace: false,
-                    useSystemFonts: false,
+                    useSystemFonts: true,
                     standardFontDataUrl: pdfjsLib.GlobalWorkerOptions.standardFontDataUrl,
+                    // 优化电子发票渲染
+                    renderInteractiveForms: true,
+                    enableScripting: true,
+                    // 提高图形渲染质量
+                    enableWebGL: true,
+                    // 增强文字渲染
+                    useOnlyCssFonts: false,
+                    forceHtml: false,
+                    // 确保字体优先使用系统字体
+                    fallbackFonts: ['Noto Sans SC', 'Arial', 'Helvetica'],
+                    // 进度回调
                     progressCallback: (progressData) => {
                         if (progressData.total > 0) {
                             const progress = Math.round((progressData.loaded / progressData.total) * 100);
@@ -358,8 +403,9 @@
                 // 更新页面信息
                 document.getElementById('pageInfo').textContent = `1 / ${pdf.numPages}`;
                 
-                // 计算容器宽度
-                const containerWidth = Math.min(window.innerWidth - 40, 900);
+                // 计算容器宽度，在手机端使用全屏宽度
+                const isMobile = window.innerWidth < 768;
+                const containerWidth = isMobile ? window.innerWidth - 30 : Math.min(window.innerWidth - 40, 900);
                 
                 // 创建页面元素数组
                 const pageElements = [];
@@ -467,9 +513,16 @@
                 const renderParams = {
                     canvasContext: context,
                     viewport: viewport,
-                    enableWebGL: false,
+                    enableWebGL: true,
                     renderInteractiveForms: true,
-                    intent: 'display'
+                    intent: 'display',
+                    // 优化电子发票渲染
+                    renderAnnotationLayer: true,
+                    renderTextLayer: true,
+                    // 提高渲染质量
+                    optimizeForSpeed: false,
+                    // 确保图形元素正确渲染
+                    renderForms: true
                 };
                 
                 console.log(`渲染页面 ${pageNum}，尺寸: ${canvas.width}x${canvas.height}`);
