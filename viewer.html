@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF 预览</title>
-    <!-- 使用Cloudflare的cdnjs加载PDF.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+    <!-- 使用本地路径加载PDF.js 5.4.530版本（ES模块格式） -->
+    <script type="module">
+      import * as pdfjsLib from './pdfjs-5.4.530/build/pdf.mjs';
+      window.pdfjsLib = pdfjsLib;
+    </script>
     <style>
         * {
             box-sizing: border-box;
@@ -217,17 +219,17 @@
                 console.log('PDF.js库已加载，版本:', window.pdfjsLib.version);
                 pdfjsLib = window.pdfjsLib;
                 
-                // 设置worker路径
+                // 设置worker路径（使用ES模块格式，本地路径）
                 if (pdfjsLib.GlobalWorkerOptions) {
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs-5.4.530/build/pdf.worker.mjs';
                     
-                    // 设置CMap资源路径
-                    pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/';
+                    // 设置CMap资源路径（使用本地路径）
+                    pdfjsLib.GlobalWorkerOptions.cMapUrl = './pdfjs-5.4.530/web/cmaps/';
                     pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
                     
                     // 确保字体正确加载
                     pdfjsLib.GlobalWorkerOptions.disableFontFace = false;
-                    pdfjsLib.GlobalWorkerOptions.standardFontDataUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/';
+                    pdfjsLib.GlobalWorkerOptions.standardFontDataUrl = './pdfjs-5.4.530/web/standard_fonts/';
                 }
                 
                 return true;
