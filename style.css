@@ -1,5 +1,5 @@
 :root {
-    --primary: #f97316; --primary-light: #fb923c; --primary-dark: #ea580c;
+    --primary: #fb923c; --primary-light: #fdba74; --primary-dark: #f97316;
     --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
     --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #1e293b;
     --text-secondary: #64748b; --text-light: #94a3b8;
@@ -386,11 +386,11 @@ input[type="file"] {
 }
 
 .file-card input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     cursor: pointer;
     accent-color: var(--primary);
-    margin-top: 2px;
+    margin-top: 3px;
     flex-shrink: 0;
 }
 

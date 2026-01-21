@@ -26,20 +26,20 @@
             position: fixed;
             top: 0;
             width: 100%;
-            height: 40px;
+            height: 36px;
             background: #333333;
             color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 16px;
+            padding: 0 14px;
             box-sizing: border-box;
             z-index: 100;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
         .toolbar h1 {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
         }
         
@@ -58,10 +58,10 @@
             background: #444444;
             color: #ffffff;
             border: 1px solid #555555;
-            padding: 6px 12px;
+            padding: 4px 10px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
             transition: all 0.2s ease;
         }
@@ -71,8 +71,8 @@
         }
         
         #viewerContainer {
-            margin-top: 40px;
-            min-height: calc(100vh - 40px);
+            margin-top: 36px;
+            min-height: calc(100vh - 36px);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -182,17 +182,26 @@
         
         @media (max-width: 768px) {
             .toolbar {
-                height: 36px;
-                padding: 0 12px;
+                height: 32px;
+                padding: 0 10px;
             }
             
             .toolbar h1 {
-                font-size: 14px;
+                font-size: 12px;
+            }
+            
+            .btn {
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+            
+            .page-info {
+                font-size: 11px;
             }
             
             #viewerContainer {
-                margin-top: 36px;
-                min-height: calc(100vh - 36px);
+                margin-top: 32px;
+                min-height: calc(100vh - 32px);
                 padding: 15px 10px;
             }
             
@@ -307,23 +316,9 @@
             
             // 文件参数可能已经编码，确保正确解析
             const fileUrl = decodeURIComponent(fileParam);
-            // 提取友好的文件名，去除查询参数和路径
-            let fileName = '文件';
-            if (fileUrl) {
-                // 去除查询参数
-                const cleanUrl = fileUrl.split('?')[0];
-                // 提取文件名部分
-                fileName = cleanUrl.split('/').pop() || '文件';
-                // 如果文件名包含"raw"（来自/api/raw路径），使用更友好的名称
-                if (fileName === 'raw') {
-                    fileName = '文档';
-                }
-            }
             document.getElementById('title').textContent = 'PDF 预览';
-            // 如果有有意义的文件名，添加到标题
-            if (fileName && fileName !== '文件' && fileName !== '文档') {
-                document.getElementById('title').textContent += ' - ' + (fileName.length > 30 ? fileName.substring(0, 30) + '...' : fileName);
-            }
+            // 完全不显示任何基于URL的文件名，避免"-raw?id"等技术信息
+            // 保持标题简洁干净
             
             await renderPDF(fileUrl);
         }
